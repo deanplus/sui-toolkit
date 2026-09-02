@@ -1,6 +1,11 @@
 temp/
+tmp/
 .cursor
 .vscode
 .DS_Store
 AGENTS.md
-tmp
+node_modules/
+build/
+dist/
+.pnpm-store/
+*.log

@@ -11,6 +11,8 @@
   - Updated Bulk Transfer and Coin Manager to use gRPC-compatible query methods (`listBalances`, `listCoins`) and promise-based transaction execution.
 - Tooling & Documentation:
   - Unified package manager commands and build/deployment scripts from yarn to `pnpm`.
+- Monorepo Architecture:
+  - Structured repository into a pnpm workspace with root package.json and unified lockfile.
 
 
 ## [0.3.1] 
