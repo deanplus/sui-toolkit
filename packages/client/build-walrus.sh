@@ -2,7 +2,7 @@
 
 # Build the React app
 echo "Building the React app..."
-yarn build
+pnpm build
 
 # Ensure ws-resources.json is in the build directory
 echo "Copying ws-resources.json to build directory..."

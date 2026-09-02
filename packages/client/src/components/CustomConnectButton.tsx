@@ -1,34 +1,48 @@
 import React, { useEffect } from "react";
-import { ConnectButton, useSuiClientContext, useCurrentWallet, useCurrentAccount } from "@mysten/dapp-kit";
+import {
+  useCurrentWallet,
+  useCurrentAccount,
+  useCurrentNetwork,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
+import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { Box, Flex } from "@chakra-ui/react";
 
 // Custom hook to get the current wallet network
 export const useWalletNetwork = (autoSync = false) => {
-  const ctx = useSuiClientContext();
-  const appNetwork = ctx.network;
-  const { isConnected } = useCurrentWallet();
+  const dAppKit = useDAppKit();
+  const appNetwork = useCurrentNetwork();
+  const wallet = useCurrentWallet();
+  const isConnected = !!wallet;
   const currentAccount = useCurrentAccount();
-  const [walletNetwork, setWalletNetwork] = React.useState(appNetwork);
+  const [walletNetwork, setWalletNetwork] = React.useState<string>(appNetwork);
 
   useEffect(() => {
     if (isConnected && currentAccount && currentAccount.chains) {
       // The wallet chain usually contains the network ID (e.g., "sui:testnet")
       const chain = currentAccount.chains[0];
-      if (typeof chain === 'string') {
-        const network = chain.split(':')[1];
-        if (network && ['mainnet', 'testnet', 'devnet', 'localnet'].includes(network)) {
+      if (typeof chain === "string") {
+        const network = chain.split(":")[1];
+        if (
+          network &&
+          ["mainnet", "testnet", "devnet", "localnet"].includes(network)
+        ) {
           setWalletNetwork(network);
 
           // Sync dApp network with wallet network if autoSync is enabled
           if (network !== appNetwork && autoSync) {
             try {
-              ctx.selectNetwork(network);
-              console.log(`Auto-synced dApp network to wallet network: ${network}`);
+              dAppKit.switchNetwork(network as any);
+              console.log(
+                `Auto-synced dApp network to wallet network: ${network}`,
+              );
             } catch (error) {
               console.error("Failed to switch network:", error);
             }
           } else if (network !== appNetwork) {
-            console.log(`Wallet is connected to ${network}, but dApp is on ${appNetwork}`);
+            console.log(
+              `Wallet is connected to ${network}, but dApp is on ${appNetwork}`,
+            );
           }
         }
       }
@@ -36,7 +50,7 @@ export const useWalletNetwork = (autoSync = false) => {
       // If not connected, show app network
       setWalletNetwork(appNetwork);
     }
-  }, [isConnected, currentAccount, appNetwork, ctx, autoSync]);
+  }, [isConnected, currentAccount, appNetwork, dAppKit, autoSync]);
 
   return walletNetwork;
 };
@@ -146,7 +160,7 @@ const CustomConnectButton = () => {
           console.log("Wallet button clicked");
         }}
       >
-        <ConnectButton connectText="Connect Wallet" />
+        <ConnectButton />
       </Box>
     </Flex>
   );

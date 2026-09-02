@@ -1,6 +1,18 @@
 # Changelog
 
 
+## [0.4.0]
+
+### Changed - 2026-09-02
+- Network & RPC Migration:
+  - Migrated client from deprecated JSON-RPC to official Sui gRPC architecture (`SuiGrpcClient`).
+  - Upgraded `@mysten/sui` to 2.x and migrated from legacy `@mysten/dapp-kit` to `@mysten/dapp-kit-react` & `@mysten/dapp-kit-core`.
+  - Replaced `SuiClientProvider` and `WalletProvider` with `DAppKitProvider` configured via `createDAppKit`.
+  - Updated Bulk Transfer and Coin Manager to use gRPC-compatible query methods (`listBalances`, `listCoins`) and promise-based transaction execution.
+- Tooling & Documentation:
+  - Unified package manager commands and build/deployment scripts from yarn to `pnpm`.
+
+
 ## [0.3.1] 
 
 ### Fixed - 2026-06-01

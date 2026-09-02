@@ -12,11 +12,10 @@ import {
 import { useTranslation } from "react-i18next";
 import {
   useCurrentAccount,
-  useSuiClient,
-  useSignAndExecuteTransaction,
-} from "@mysten/dapp-kit";
-import { Transaction} from "@mysten/sui/transactions";
-import { CoinStruct } from "@mysten/sui/client";
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
+import { Transaction } from "@mysten/sui/transactions";
 import toast from "react-hot-toast";
 import { formatCoinType, formatBalance } from "./utils";
 import { useWalletNetwork } from "../CustomConnectButton";
@@ -46,8 +45,8 @@ interface ExtendedCoinObject extends CoinObject {
 const CoinManager: React.FC = () => {
   const { t } = useTranslation();
   const currentAccount = useCurrentAccount();
-  const suiClient = useSuiClient();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const suiClient = useCurrentClient();
+  const dAppKit = useDAppKit();
   const walletNetwork = useWalletNetwork(true);
 
   const limitMergeCoinIds = useCallback((coinIds: string[]) => {
@@ -213,100 +212,112 @@ const CoinManager: React.FC = () => {
       console.log("Current network:", walletNetwork);
       console.log("Wallet address:", currentAccount.address);
 
-      // Get all coins for the account using pagination
-      let allCoins:CoinStruct[] = [];
-      let cursor = null;
+      // Get all coin balances for the account using pagination
+      const balances: Array<{ coinType: string; balance: string }> = [];
+      let balanceCursor: string | null = null;
 
       while (true) {
-        const response = await suiClient.getAllCoins({
+        const balanceRes = await suiClient.listBalances({
           owner: currentAccount.address,
-          limit: 50, //default and max
-          cursor: cursor,
+          limit: 50,
+          cursor: balanceCursor,
         });
 
-        allCoins = [...allCoins, ...response.data];
+        balances.push(...balanceRes.balances);
 
-        if (response.hasNextPage) {
-          cursor = response.nextCursor;
+        if (balanceRes.hasNextPage && balanceRes.cursor) {
+          balanceCursor = balanceRes.cursor;
         } else {
           break;
         }
       }
 
-      // Output the number of coins obtained
-      console.log(`Retrieved ${allCoins.length} coin objects`);
-
       // Group coins by type
       const coinsByType = new Map<string, any[]>();
-      const coinMetadata = new Map<string, { decimals: number, symbol: string, iconUrl: string | null }>();
+      const coinMetadata = new Map<
+        string,
+        { decimals: number; symbol: string; iconUrl: string | null }
+      >();
 
-      // Fetch metadata for all coin types
-      for (const coin of allCoins) {
-        if (!coin.coinType) continue;
+      // Fetch metadata and individual coin objects for each coin type
+      for (const balanceEntry of balances) {
+        const coinType = balanceEntry.coinType;
+        if (!coinType) continue;
 
-        if (!coinMetadata.has(coin.coinType)) {
+        if (!coinMetadata.has(coinType)) {
           try {
-            const metadata = await suiClient.getCoinMetadata({
-              coinType: coin.coinType,
+            const metaRes = await suiClient.getCoinMetadata({
+              coinType,
             });
+            const metadata = (metaRes as any)?.coinMetadata ?? metaRes;
 
             if (metadata) {
-              let symbol = metadata.symbol || formatCoinType(coin.coinType);
-              if (coin.coinType === WUSDC_COIN_TYPE) symbol = "wUSDC"
-              coinMetadata.set(coin.coinType, {
+              let symbol = metadata.symbol || formatCoinType(coinType);
+              if (coinType === WUSDC_COIN_TYPE) symbol = "wUSDC";
+              coinMetadata.set(coinType, {
                 decimals: metadata.decimals,
                 symbol: symbol,
-                iconUrl: metadata.iconUrl || null  // Get the coin icon URL
+                iconUrl: metadata.iconUrl || null,
               });
             } else {
-              // Default values if metadata not found
-              coinMetadata.set(coin.coinType, {
+              coinMetadata.set(coinType, {
                 decimals: 9,
-                symbol: formatCoinType(coin.coinType),
-                iconUrl: null
+                symbol: formatCoinType(coinType),
+                iconUrl: null,
               });
             }
           } catch (error) {
-            console.error(`Error fetching metadata for ${coin.coinType}:`, error);
-            // Default values on error
-            coinMetadata.set(coin.coinType, {
+            console.error(`Error fetching metadata for ${coinType}:`, error);
+            coinMetadata.set(coinType, {
               decimals: 9,
-              symbol: formatCoinType(coin.coinType),
-              iconUrl: null
+              symbol: formatCoinType(coinType),
+              iconUrl: null,
             });
+          }
+        }
+
+        const metadata = coinMetadata.get(coinType) || {
+          decimals: 9,
+          symbol: formatCoinType(coinType),
+          iconUrl: null,
+        };
+
+        const isSuiCoin = coinType === SUI_TYPE_ARG;
+        const iconUrl = isSuiCoin
+          ? "https://images.chaintoolkit.xyz/sui-logo.svg"
+          : metadata.iconUrl;
+
+        let coinCursor: string | null = null;
+        while (true) {
+          const coinsRes = await suiClient.listCoins({
+            owner: currentAccount.address,
+            coinType,
+            limit: 50,
+            cursor: coinCursor,
+          });
+
+          const formattedCoins = (coinsRes.objects || []).map((coin: any) => ({
+            id: coin.objectId ?? coin.coinObjectId,
+            balance: coin.balance.toString(),
+            type: coinType,
+            decimals: metadata.decimals,
+            iconUrl,
+          }));
+
+          if (!coinsByType.has(coinType)) {
+            coinsByType.set(coinType, []);
+          }
+          coinsByType.get(coinType)?.push(...formattedCoins);
+
+          if (coinsRes.hasNextPage && coinsRes.cursor) {
+            coinCursor = coinsRes.cursor;
+          } else {
+            break;
           }
         }
       }
 
-      allCoins.forEach(coin => {
-        if (!coin.coinType) return;
-
-        const metadata = coinMetadata.get(coin.coinType) || { 
-          decimals: 9, 
-          symbol: formatCoinType(coin.coinType),
-          iconUrl: null 
-        };
-
-        // Special handling for SUI coin - use a specific logo URL
-        const isSuiCoin = coin.coinType === SUI_TYPE_ARG;
-        const iconUrl = isSuiCoin 
-          ? "https://images.chaintoolkit.xyz/sui-logo.svg" 
-          : metadata.iconUrl;
-
-        const formattedCoin = {
-          id: coin.coinObjectId,
-          balance: coin.balance.toString(),
-          type: coin.coinType,
-          decimals: metadata.decimals,
-          iconUrl: iconUrl  // Use special SUI icon or metadata icon
-        };
-
-        if (!coinsByType.has(coin.coinType)) {
-          coinsByType.set(coin.coinType, []);
-        }
-
-        coinsByType.get(coin.coinType)?.push(formattedCoin);
-      });
+      console.log(`Retrieved coins for ${coinsByType.size} coin types`);
 
       // Create summaries
       const summaries: CoinTypeSummary[] = [];
@@ -373,44 +384,36 @@ const CoinManager: React.FC = () => {
   const executeTransaction = async (
     tx: Transaction,
     successMessage: string,
-    operationType: 'batchMerge' | 'batchCleanZero' | 'batchBurn' | 'singleOperation'
+    operationType:
+      | "batchMerge"
+      | "batchCleanZero"
+      | "batchBurn"
+      | "singleOperation",
   ) => {
     try {
-      setLoadingState(prev => ({ ...prev, [operationType]: true }));
-      
+      setLoadingState((prev) => ({ ...prev, [operationType]: true }));
+
       console.log("Executing transaction:", JSON.stringify(tx, null, 2));
 
-      return new Promise((resolve, reject) => {
-        signAndExecute(
-          {
-            transaction: tx,
-          },
-          {
-            onSuccess: (result) => {
-              console.log("Transaction succeeded:", JSON.stringify(result, null, 2));
-              toast.success(successMessage);
-              // Add a delay before resolving to allow blockchain state to update
-              setTimeout(() => {
-                resolve({ success: true, result });
-              }, 2000); // 2 seconds delay
-            },
-            onError: (error) => {
-              const errorMsg = error instanceof Error ? error.message : t("coinManager.error.unknownError");
-              console.error("Transaction failed:", errorMsg);
-              console.error("Full error:", error);
-              toast.error(t("coinManager.error.operationFailed") + ": " + errorMsg);
-              reject({ success: false, error });
-            }
-          }
-        );
+      const result = await dAppKit.signAndExecuteTransaction({
+        transaction: tx,
       });
+
+      console.log("Transaction succeeded:", JSON.stringify(result, null, 2));
+      toast.success(successMessage);
+      // Add a delay before resolving to allow blockchain state to update
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return { success: true, result };
     } catch (error) {
-      console.error("Transaction preparation error:", error);
-      const errorMsg = error instanceof Error ? error.message : t("coinManager.error.unknownError");
+      console.error("Transaction execution error:", error);
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : t("coinManager.error.unknownError");
       toast.error(t("coinManager.error.operationFailed") + ": " + errorMsg);
       throw error;
     } finally {
-      setLoadingState(prev => ({ ...prev, [operationType]: false }));
+      setLoadingState((prev) => ({ ...prev, [operationType]: false }));
     }
   };
 

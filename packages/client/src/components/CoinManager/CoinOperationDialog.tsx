@@ -32,7 +32,7 @@ interface CoinOperationDialogProps {
 
 // For Checkbox.onCheckedChange type definition
 interface CheckedChangeEvent {
-  checked?: boolean;
+  checked?: boolean | "indeterminate";
 }
 
 // Extended CoinObject interface to support additional properties for batch mode
@@ -449,8 +449,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
         >
           <Flex alignItems="center">
             <Checkbox.Root 
-              checked={isTypeSelected}
-              indeterminate={isTypeIndeterminate}
+              checked={isTypeSelected ? true : isTypeIndeterminate ? "indeterminate" : false}
               onCheckedChange={(e: CheckedChangeEvent) => 
                 toggleCoinTypeSelection(typeCoins, type, !!e.checked)}
             >
@@ -571,7 +570,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
   };
 
   return (
-    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(open: boolean) => !open && onClose()} initialFocusEl={cancelRef}>
+    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(details) => !details.open && onClose()} initialFocusEl={() => cancelRef.current}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -621,8 +620,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
                 
                 <Flex justifyContent="space-between" alignItems="center" mb={3}>
                   <Checkbox.Root 
-                    checked={isAllSelected}
-                    indeterminate={isIndeterminate}
+                    checked={isAllSelected ? true : isIndeterminate ? "indeterminate" : false}
                     onCheckedChange={(e: CheckedChangeEvent) => toggleSelectAll(!!e.checked)}
                   >
                     <Checkbox.HiddenInput />

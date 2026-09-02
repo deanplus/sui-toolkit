@@ -27,7 +27,7 @@ const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(open: boolean) => !open && onClose()} initialFocusEl={cancelRef}>
+    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(details) => !details.open && onClose()} initialFocusEl={() => cancelRef.current}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>

@@ -30,7 +30,7 @@ interface CoinBurnSelectionDialogProps {
 
 // For Checkbox.onCheckedChange type definition
 interface CheckedChangeEvent {
-  checked?: boolean;
+  checked?: boolean | "indeterminate";
 }
 
 // Extended CoinObject interface to support additional properties for batch burn mode
@@ -507,8 +507,7 @@ const CoinBurnSelectionDialog: React.FC<CoinBurnSelectionDialogProps> = ({
         >
           <Flex alignItems="center">
             <Checkbox.Root 
-              checked={allSelected}
-              indeterminate={someSelected}
+              checked={allSelected ? true : someSelected ? "indeterminate" : false}
               onCheckedChange={(e: CheckedChangeEvent) => 
                 toggleCoinTypeSelection(typeCoins, type, !!e.checked)}
             >
@@ -644,8 +643,7 @@ const CoinBurnSelectionDialog: React.FC<CoinBurnSelectionDialogProps> = ({
         
         <Flex justifyContent="space-between" alignItems="center" mb={3}>
           <Checkbox.Root 
-            checked={isAllSelected}
-            indeterminate={isIndeterminate}
+            checked={isAllSelected ? true : isIndeterminate ? "indeterminate" : false}
             onCheckedChange={(e: CheckedChangeEvent) => toggleSelectAll(!!e.checked)}
           >
             <Checkbox.HiddenInput />
@@ -667,7 +665,7 @@ const CoinBurnSelectionDialog: React.FC<CoinBurnSelectionDialogProps> = ({
   };
 
   return (
-    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(open: boolean) => !open && onClose()} initialFocusEl={cancelRef}>
+    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(details) => !details.open && onClose()} initialFocusEl={() => cancelRef.current}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -699,8 +697,7 @@ const CoinBurnSelectionDialog: React.FC<CoinBurnSelectionDialogProps> = ({
                 
                     <Flex justifyContent="space-between" alignItems="center" mb={3}>
                       <Checkbox.Root 
-                        checked={isAllSelected}
-                        indeterminate={isIndeterminate}
+                        checked={isAllSelected ? true : isIndeterminate ? "indeterminate" : false}
                         onCheckedChange={(e: CheckedChangeEvent) => toggleSelectAll(!!e.checked)}
                       >
                         <Checkbox.HiddenInput />

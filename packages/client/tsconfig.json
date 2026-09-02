@@ -10,14 +10,11 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "@mysten/sui": ["./node_modules/@mysten/sui"]
-    }
+    "jsx": "react-jsx"
   },
   "include": ["src"]
 }

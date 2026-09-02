@@ -1,7 +1,6 @@
 import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import "@mysten/dapp-kit/dist/index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import "./i18n/i18n"; // Import i18n configuration

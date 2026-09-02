@@ -13,9 +13,9 @@ import {
 } from "@chakra-ui/react";
 import {
   useCurrentAccount,
-  useSignAndExecuteTransaction,
-  useSuiClient,
-} from "@mysten/dapp-kit";
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { isValidSuiAddress } from "@mysten/sui/utils";
 import { useTranslation } from "react-i18next";
@@ -38,29 +38,33 @@ const BulkTransfer: React.FC = () => {
   const [lastTxDigest, setLastTxDigest] = useState<string | null>(null);
 
   const currentAccount = useCurrentAccount();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
-  const suiClient = useSuiClient();
+  const dAppKit = useDAppKit();
+  const suiClient = useCurrentClient();
   const { t } = useTranslation();
   const network = useWalletNetwork();
 
   // Fetch account balance when currentAccount changes
-  useEffect(() => {
-    const fetchAccountBalance = async () => {
-      if (currentAccount) {
-        try {
-          const balanceResponse = await suiClient.getBalance({
-            owner: currentAccount.address,
-          });
-          setAccountBalance(BigInt(balanceResponse.totalBalance));
-        } catch (error) {
-          console.error("Failed to fetch balance:", error);
-          toast.error(t("bulkTransfer.error.balanceFetchFailed"));
-        }
+  const fetchAccountBalance = React.useCallback(async () => {
+    if (currentAccount) {
+      try {
+        const balanceResponse = await suiClient.getBalance({
+          owner: currentAccount.address,
+        });
+        const total =
+          (balanceResponse as any).balance?.balance ??
+          (balanceResponse as any).totalBalance ??
+          "0";
+        setAccountBalance(BigInt(total));
+      } catch (error) {
+        console.error("Failed to fetch balance:", error);
+        toast.error(t("bulkTransfer.error.balanceFetchFailed"));
       }
-    };
-
-    fetchAccountBalance();
+    }
   }, [currentAccount, suiClient, t]);
+
+  useEffect(() => {
+    fetchAccountBalance();
+  }, [fetchAccountBalance]);
 
   const addNewRow = () => {
     setTransferItems([...transferItems, { address: "", amount: "", isValidAddress: true }]);
@@ -142,34 +146,24 @@ const BulkTransfer: React.FC = () => {
       }
 
       // Execute transaction
-      signAndExecute(
-        {
-          transaction: tx,
-        },
-        {
-          onSuccess: (result) => {
-            setLastTxDigest(result.digest);
-            toast.success(t("bulkTransfer.success.description", {
-              digest: result.digest,
-            }));
-            setIsLoading(false);
-          },
-          onError: (error) => {
-            toast.error(
-              error instanceof Error
-                ? error.message
-                : t("bulkTransfer.error.unknownError")
-            );
-            setIsLoading(false);
-          },
-        },
+      const result = await dAppKit.signAndExecuteTransaction({
+        transaction: tx,
+      });
+      const digest = (result as any).digest;
+      setLastTxDigest(digest);
+      toast.success(
+        t("bulkTransfer.success.description", {
+          digest,
+        }),
       );
+      fetchAccountBalance();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : t("bulkTransfer.error.unknownError")
+          : t("bulkTransfer.error.unknownError"),
       );
+    } finally {
       setIsLoading(false);
     }
   };
