@@ -25,29 +25,32 @@ export const formatCoinType = (coinType: string): string => {
 };
 
 // Helper to format balance for display
-export const formatBalance = (balance: string, decimals: number = 9): string => {
+export const formatBalance = (
+  balance: string,
+  decimals: number = 9,
+): string => {
   try {
     const balanceBigInt = BigInt(balance);
     const divisor = BigInt(10 ** decimals);
-    
+
     if (balanceBigInt === BigInt(0)) return "0";
-    
+
     // Calculate the integer and decimal parts
     const integerPart = (balanceBigInt / divisor).toString();
     const remainder = balanceBigInt % divisor;
-    
+
     if (remainder === BigInt(0)) return integerPart;
-    
+
     // Format the decimal part with proper padding
-    let decimalPart = remainder.toString().padStart(decimals, '0');
-    
+    let decimalPart = remainder.toString().padStart(decimals, "0");
+
     // Remove trailing zeros
-    decimalPart = decimalPart.replace(/0+$/, '');
-    
+    decimalPart = decimalPart.replace(/0+$/, "");
+
     if (decimalPart.length > 0) {
       return `${integerPart}.${decimalPart}`;
     }
-    
+
     return integerPart;
   } catch (error) {
     console.error("Error formatting balance:", error);
@@ -59,4 +62,4 @@ export const formatBalance = (balance: string, decimals: number = 9): string => 
 export const formatCoinId = (id: string): string => {
   if (id.length <= 14) return id;
   return `${id.substring(0, 4)}...${id.substring(id.length - 4)}`;
-}; 
+};

@@ -30,13 +30,19 @@ const CoinTypesList: React.FC<CoinTypesListProps> = ({
   onCleanZeroCoins,
   onBurnCoin,
   onBurnSingleCoin,
-  onShowBurnDialog
+  onShowBurnDialog,
 }) => {
   const { t } = useTranslation();
 
   return (
     <Box overflowX="auto">
-      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          tableLayout: "fixed",
+        }}
+      >
         <colgroup>
           <col style={{ width: "40px" }} />
           <col style={{ width: "30%" }} />
@@ -47,22 +53,64 @@ const CoinTypesList: React.FC<CoinTypesListProps> = ({
         </colgroup>
         <thead>
           <tr>
-            <th style={{ padding: "10px", textAlign: "center", width: "40px", fontWeight: "normal" }}>
+            <th
+              style={{
+                padding: "10px",
+                textAlign: "center",
+                width: "40px",
+                fontWeight: "normal",
+              }}
+            >
               {/* Expand/collapse column */}
             </th>
-            <th style={{ padding: "10px", textAlign: "left", width: "30%", fontWeight: "normal" }}>
+            <th
+              style={{
+                padding: "10px",
+                textAlign: "left",
+                width: "30%",
+                fontWeight: "normal",
+              }}
+            >
               {t("coinManager.name")}
             </th>
-            <th style={{ padding: "10px", textAlign: "right", width: "20%", fontWeight: "normal" }}>
+            <th
+              style={{
+                padding: "10px",
+                textAlign: "right",
+                width: "20%",
+                fontWeight: "normal",
+              }}
+            >
               {t("coinManager.totalBalance")}
             </th>
-            <th style={{ padding: "10px", textAlign: "right", width: "15%", fontWeight: "normal" }}>
+            <th
+              style={{
+                padding: "10px",
+                textAlign: "right",
+                width: "15%",
+                fontWeight: "normal",
+              }}
+            >
               {t("coinManager.value")}
             </th>
-            <th style={{ padding: "10px", textAlign: "center", width: "15%", fontWeight: "normal" }}>
+            <th
+              style={{
+                padding: "10px",
+                textAlign: "center",
+                width: "15%",
+                fontWeight: "normal",
+              }}
+            >
               {t("coinManager.objectCount")}
             </th>
-            <th style={{ padding: "10px", textAlign: "center", width: "20%", fontWeight: "normal" }}>
+            <th
+              style={{
+                padding: "10px",
+                textAlign: "center",
+                width: "20%",
+                fontWeight: "normal",
+              }}
+            >
               {t("coinManager.actions")}
             </th>
           </tr>
@@ -106,4 +154,4 @@ const CoinTypesList: React.FC<CoinTypesListProps> = ({
   );
 };
 
-export default CoinTypesList; 
+export default CoinTypesList;

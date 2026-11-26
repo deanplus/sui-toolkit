@@ -58,7 +58,9 @@ const Faucet: React.FC = () => {
       // Validate addresses format
       for (const addr of addressList) {
         if (!isValidSuiAddress(addr)) {
-          throw new Error(t("faucet.error.invalidAddressFormat", { address: addr }));
+          throw new Error(
+            t("faucet.error.invalidAddressFormat", { address: addr }),
+          );
         }
       }
 
@@ -89,9 +91,11 @@ const Faucet: React.FC = () => {
           failed: faileds,
         });
 
-        toast.success(t("faucet.success.description", {
-          count: succeeds.length,
-        }));
+        toast.success(
+          t("faucet.success.description", {
+            count: succeeds.length,
+          }),
+        );
       } else {
         throw new Error(t("faucet.error.noSuccessfulFunding"));
       }
@@ -106,9 +110,7 @@ const Faucet: React.FC = () => {
       });
 
       toast.error(
-        error instanceof Error
-          ? error.message
-          : t("faucet.error.description")
+        error instanceof Error ? error.message : t("faucet.error.description"),
       );
     } finally {
       setIsSubmitting(false);
@@ -165,7 +167,8 @@ const Faucet: React.FC = () => {
               >
                 <option value="devnet">{t("faucet.networks.devnet")}</option>
                 <option value="testnet" disabled>
-                  {t("faucet.networks.testnet")} ({t("faucet.networks.unavailable")})
+                  {t("faucet.networks.testnet")} (
+                  {t("faucet.networks.unavailable")})
                 </option>
               </select>
             </Box>

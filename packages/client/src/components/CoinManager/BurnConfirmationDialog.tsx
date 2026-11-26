@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  Button,
-  Dialog,
-  Portal,
-} from "@chakra-ui/react";
+import { Button, Dialog, Portal } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 
 interface BurnConfirmationDialogProps {
@@ -21,13 +17,18 @@ const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
   onConfirm,
   title,
   message,
-  isLoading
+  isLoading,
 }) => {
   const { t } = useTranslation();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <Dialog.Root open={isOpen} role="alertdialog" onOpenChange={(details) => !details.open && onClose()} initialFocusEl={() => cancelRef.current}>
+    <Dialog.Root
+      open={isOpen}
+      role="alertdialog"
+      onOpenChange={(details) => !details.open && onClose()}
+      initialFocusEl={() => cancelRef.current}
+    >
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -35,18 +36,16 @@ const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
             <Dialog.Header>
               <Dialog.Title>{title}</Dialog.Title>
             </Dialog.Header>
-            
-            <Dialog.Body>
-              {message}
-            </Dialog.Body>
-            
+
+            <Dialog.Body>{message}</Dialog.Body>
+
             <Dialog.Footer>
               <Button ref={cancelRef} onClick={onClose} disabled={isLoading}>
                 {t("common.cancel")}
               </Button>
-              <Button 
-                colorPalette="red" 
-                onClick={onConfirm} 
+              <Button
+                colorPalette="red"
+                onClick={onConfirm}
                 ml={3}
                 loading={isLoading}
                 loadingText={t("coinManager.loading")}
@@ -61,4 +60,4 @@ const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
   );
 };
 
-export default BurnConfirmationDialog; 
+export default BurnConfirmationDialog;

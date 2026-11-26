@@ -49,14 +49,21 @@ const CoinManager: React.FC = () => {
   const dAppKit = useDAppKit();
   const walletNetwork = useWalletNetwork(true);
 
-  const limitMergeCoinIds = useCallback((coinIds: string[]) => {
-    if (coinIds.length <= MAX_MERGE_COIN_OBJECTS) {
-      return coinIds;
-    }
+  const limitMergeCoinIds = useCallback(
+    (coinIds: string[]) => {
+      if (coinIds.length <= MAX_MERGE_COIN_OBJECTS) {
+        return coinIds;
+      }
 
-    toast(t("coinManager.mergeSelectionLimitNotice", { limit: MAX_MERGE_COIN_OBJECTS }));
-    return coinIds.slice(0, MAX_MERGE_COIN_OBJECTS);
-  }, [t]);
+      toast(
+        t("coinManager.mergeSelectionLimitNotice", {
+          limit: MAX_MERGE_COIN_OBJECTS,
+        }),
+      );
+      return coinIds.slice(0, MAX_MERGE_COIN_OBJECTS);
+    },
+    [t],
+  );
 
   // Unified loading state management
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -66,22 +73,26 @@ const CoinManager: React.FC = () => {
     batchBurn: false,
     singleOperation: false,
     fetchPrices: false,
-    networkSync: true // Default to waiting for network sync state
+    networkSync: true, // Default to waiting for network sync state
   });
 
   // State variables
   const [selectedCoinType, setSelectedCoinType] = useState<string | null>(null);
-  const [coinTypeSummaries, setCoinTypeSummaries] = useState<CoinTypeSummary[]>([]);
+  const [coinTypeSummaries, setCoinTypeSummaries] = useState<CoinTypeSummary[]>(
+    [],
+  );
   const [selectedCoins, setSelectedCoins] = useState<Set<string>>(new Set());
-  const [allCoinsForBurnDialog, setAllCoinsForBurnDialog] = useState<ExtendedCoinObject[]>([]);
+  const [allCoinsForBurnDialog, setAllCoinsForBurnDialog] = useState<
+    ExtendedCoinObject[]
+  >([]);
 
   // Confirmation dialog states
   const [burnConfirmation, setBurnConfirmation] = useState({
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => { },
-    type: "single" as "single" | "batch"
+    onConfirm: () => {},
+    type: "single" as "single" | "batch",
   });
 
   // New state for burn selection dialog
@@ -117,7 +128,7 @@ const CoinManager: React.FC = () => {
     onConfirm: (selectedCoinIds: string[]) => {},
     operationType: "merge",
     decimals: 9,
-    iconUrl: null
+    iconUrl: null,
   });
 
   // Helper for toggling coin selection
@@ -125,10 +136,14 @@ const CoinManager: React.FC = () => {
     const newSelection = new Set(selectedCoins);
     if (newSelection.has(coinId)) {
       newSelection.delete(coinId);
-      console.log(`Removed coin ${coinId} from selection. Total selected: ${newSelection.size}`);
+      console.log(
+        `Removed coin ${coinId} from selection. Total selected: ${newSelection.size}`,
+      );
     } else {
       newSelection.add(coinId);
-      console.log(`Added coin ${coinId} to selection. Total selected: ${newSelection.size}`);
+      console.log(
+        `Added coin ${coinId} to selection. Total selected: ${newSelection.size}`,
+      );
     }
     setSelectedCoins(newSelection);
     console.log("Current selection:", Array.from(newSelection));
@@ -136,16 +151,18 @@ const CoinManager: React.FC = () => {
 
   // Helper to toggle expansion of a coin type
   const toggleCoinTypeExpansion = (coinType: string) => {
-    setCoinTypeSummaries(prevSummaries =>
-      prevSummaries.map(summary =>
+    setCoinTypeSummaries((prevSummaries) =>
+      prevSummaries.map((summary) =>
         summary.type === coinType
           ? { ...summary, expanded: !summary.expanded }
-          : summary
-      )
+          : summary,
+      ),
     );
 
     // Set the selected coin type
-    setSelectedCoinType(prevType => prevType === coinType ? null : coinType);
+    setSelectedCoinType((prevType) =>
+      prevType === coinType ? null : coinType,
+    );
 
     // Reset selection when changing coin type
     setSelectedCoins(new Set());
@@ -156,7 +173,7 @@ const CoinManager: React.FC = () => {
     if (!summaries.length) return;
 
     try {
-      setLoadingState(prev => ({ ...prev, fetchPrices: true }));
+      setLoadingState((prev) => ({ ...prev, fetchPrices: true }));
       // Create a copy of summaries to update with price data
       const updatedSummaries = [...summaries];
 
@@ -168,7 +185,8 @@ const CoinManager: React.FC = () => {
           // Skip fetching price for wUSDC itself
           if (summary.type === USDC_COIN_TYPE) {
             summary.price = "1.0";
-            summary.value = Number(summary.totalBalance) / Math.pow(10, summary.decimals);
+            summary.value =
+              Number(summary.totalBalance) / Math.pow(10, summary.decimals);
             continue;
           }
 
@@ -176,13 +194,17 @@ const CoinManager: React.FC = () => {
             summary.type,
             summary.decimals,
             USDC_COIN_TYPE,
-            USDC_COIN_DECIMALS
+            USDC_COIN_DECIMALS,
           );
 
           // Update the summary with price and calculated value
           summary.price = price;
           if (price) {
-            summary.value = calculateValue(summary.totalBalance, price, summary.decimals);
+            summary.value = calculateValue(
+              summary.totalBalance,
+              price,
+              summary.decimals,
+            );
           } else {
             summary.value = null;
           }
@@ -197,7 +219,7 @@ const CoinManager: React.FC = () => {
     } catch (error) {
       console.error("Error fetching coin prices:", error);
     } finally {
-      setLoadingState(prev => ({ ...prev, fetchPrices: false }));
+      setLoadingState((prev) => ({ ...prev, fetchPrices: false }));
     }
   }, []);
 
@@ -206,7 +228,7 @@ const CoinManager: React.FC = () => {
     if (!currentAccount) return;
 
     try {
-      setLoadingState(prev => ({ ...prev, fetchCoins: true }));
+      setLoadingState((prev) => ({ ...prev, fetchCoins: true }));
 
       // Record current network information
       console.log("Current network:", walletNetwork);
@@ -323,21 +345,20 @@ const CoinManager: React.FC = () => {
       const summaries: CoinTypeSummary[] = [];
 
       for (const [type, coins] of coinsByType.entries()) {
-        const totalBalance = coins.reduce(
-          (sum, coin) => sum + BigInt(coin.balance),
-          BigInt(0)
-        ).toString();
+        const totalBalance = coins
+          .reduce((sum, coin) => sum + BigInt(coin.balance), BigInt(0))
+          .toString();
 
-        const metadata = coinMetadata.get(type) || { 
-          decimals: 9, 
+        const metadata = coinMetadata.get(type) || {
+          decimals: 9,
           symbol: formatCoinType(type),
-          iconUrl: null 
+          iconUrl: null,
         };
 
         // Special handling for SUI coin icon
         const isSuiCoin = type === SUI_TYPE_ARG;
-        const iconUrl = isSuiCoin 
-          ? "https://images.chaintoolkit.xyz/sui-logo.svg" 
+        const iconUrl = isSuiCoin
+          ? "https://images.chaintoolkit.xyz/sui-logo.svg"
           : metadata.iconUrl;
 
         summaries.push({
@@ -348,7 +369,7 @@ const CoinManager: React.FC = () => {
           objects: coins,
           expanded: false,
           decimals: metadata.decimals,
-          iconUrl: iconUrl  // Use special SUI icon or metadata icon
+          iconUrl: iconUrl, // Use special SUI icon or metadata icon
         });
       }
 
@@ -363,21 +384,26 @@ const CoinManager: React.FC = () => {
 
       // Fetch prices for all coin types
       await fetchCoinPrices(summaries);
-
     } catch (error) {
       console.error("Error fetching coins:", error);
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.unknownError"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.unknownError"),
+      );
     } finally {
-      setLoadingState(prev => ({ ...prev, fetchCoins: false }));
+      setLoadingState((prev) => ({ ...prev, fetchCoins: false }));
     }
   }, [currentAccount, suiClient, t, walletNetwork, fetchCoinPrices]);
 
   // Check if there's any coin type with multiple objects (can be merged)
-  const hasMergeableCoins = coinTypeSummaries.some(summary => summary.objectCount > 1);
+  const hasMergeableCoins = coinTypeSummaries.some(
+    (summary) => summary.objectCount > 1,
+  );
 
   // Check if there's any zero balance coin object
-  const hasZeroBalanceCoins = coinTypeSummaries.some(summary =>
-    summary.objects.some(coin => parseInt(coin.balance, 10) === 0)
+  const hasZeroBalanceCoins = coinTypeSummaries.some((summary) =>
+    summary.objects.some((coin) => parseInt(coin.balance, 10) === 0),
   );
 
   // Generic transaction execution function to reduce code duplication
@@ -385,10 +411,7 @@ const CoinManager: React.FC = () => {
     tx: Transaction,
     successMessage: string,
     operationType:
-      | "batchMerge"
-      | "batchCleanZero"
-      | "batchBurn"
-      | "singleOperation",
+      "batchMerge" | "batchCleanZero" | "batchBurn" | "singleOperation",
   ) => {
     try {
       setLoadingState((prev) => ({ ...prev, [operationType]: true }));
@@ -420,12 +443,16 @@ const CoinManager: React.FC = () => {
   // Optimized batch merge function
   const handleBatchMerge = async () => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
     // Modified merge logic with special handling for SUI type
-    const mergeableCoinTypes = coinTypeSummaries.filter(summary => {
+    const mergeableCoinTypes = coinTypeSummaries.filter((summary) => {
       // For SUI type, need at least 3 objects to merge (1 for gas, at least 2 for merging)
       if (summary.type === SUI_TYPE_ARG) {
         return summary.objectCount >= 3;
@@ -433,28 +460,34 @@ const CoinManager: React.FC = () => {
       // For other coin types, need at least 2 objects to merge
       return summary.objectCount >= 2;
     });
-    
+
     if (mergeableCoinTypes.length === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noMergeableCoins"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.noMergeableCoins"),
+      );
       return;
     }
 
     // Collect all mergeable coins
     const allCoins: ExtendedCoinObject[] = [];
-    mergeableCoinTypes.forEach(summary => {
+    mergeableCoinTypes.forEach((summary) => {
       // For all coin types, include all objects
-      summary.objects.forEach(coin => {
+      summary.objects.forEach((coin) => {
         allCoins.push({
           ...coin,
           symbol: summary.symbol,
           iconUrl: summary.iconUrl,
-          type: summary.type // Ensure the type field is correctly set
+          type: summary.type, // Ensure the type field is correctly set
         });
       });
     });
-    
+
     console.log(`Total coins added to allCoins: ${allCoins.length}`);
-    console.log(`SUI coins in allCoins: ${allCoins.filter(coin => coin.type === SUI_TYPE_ARG).length}`);
+    console.log(
+      `SUI coins in allCoins: ${allCoins.filter((coin) => coin.type === SUI_TYPE_ARG).length}`,
+    );
 
     // Show merge selection dialog
     setOperationDialog({
@@ -464,19 +497,19 @@ const CoinManager: React.FC = () => {
       decimals: 9,
       operationType: "merge",
       onConfirm: async (selectedCoinIds: string[]) => {
-        setOperationDialog(prev => ({ ...prev, isOpen: false }));
+        setOperationDialog((prev) => ({ ...prev, isOpen: false }));
 
         try {
-          setLoadingState(prev => ({ ...prev, batchMerge: true }));
+          setLoadingState((prev) => ({ ...prev, batchMerge: true }));
 
           // Create a transaction
           const tx = new Transaction();
           const coinsByType = new Map<string, string[]>();
 
           // Group selected coins by type
-          limitMergeCoinIds(selectedCoinIds).forEach(coinId => {
+          limitMergeCoinIds(selectedCoinIds).forEach((coinId) => {
             for (const summary of coinTypeSummaries) {
-              const coin = summary.objects.find(c => c.id === coinId);
+              const coin = summary.objects.find((c) => c.id === coinId);
               if (coin) {
                 if (!coinsByType.has(summary.type)) {
                   coinsByType.set(summary.type, []);
@@ -489,44 +522,57 @@ const CoinManager: React.FC = () => {
 
           // Process each coin type
           for (const [type, coinIds] of coinsByType.entries()) {
-            const summary = coinTypeSummaries.find(s => s.type === type);
+            const summary = coinTypeSummaries.find((s) => s.type === type);
             if (!summary) continue;
 
             // Special handling for SUI coins
             if (type === SUI_TYPE_ARG) {
               // Get all SUI coins
               const allSuiCoins = summary.objects;
-              
+
               // Skip if not enough coins selected
               if (coinIds.length < 2) {
-                console.log(`Not enough SUI coins selected for type ${type}: ${coinIds.length}`);
+                console.log(
+                  `Not enough SUI coins selected for type ${type}: ${coinIds.length}`,
+                );
                 continue;
               }
-              
+
               // Find the highest balance SUI coin to use as gas (not participating in merge)
-              const sortedAllCoins = [...allSuiCoins]
-                .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
-              
+              const sortedAllCoins = [...allSuiCoins].sort((a, b) =>
+                Number(BigInt(b.balance) - BigInt(a.balance)),
+              );
+
               // Get the highest balance SUI as gas object
               const gasCoinId = sortedAllCoins[0].id;
-              console.log(`Using highest balance SUI as gas (not for merging): ${gasCoinId}`);
-              
+              console.log(
+                `Using highest balance SUI as gas (not for merging): ${gasCoinId}`,
+              );
+
               // Filter out gas object from selected coins
-              const mergeCandidates = limitMergeCoinIds(coinIds.filter(id => id !== gasCoinId));
-              console.log(`Selected SUI coins after filtering gas coin: ${mergeCandidates.length}`);
-              
+              const mergeCandidates = limitMergeCoinIds(
+                coinIds.filter((id) => id !== gasCoinId),
+              );
+              console.log(
+                `Selected SUI coins after filtering gas coin: ${mergeCandidates.length}`,
+              );
+
               // Ensure there are enough coins to merge
               if (mergeCandidates.length < 2) {
-                console.log(`Not enough SUI coins to merge for type ${type} after filtering gas coin`);
+                console.log(
+                  `Not enough SUI coins to merge for type ${type} after filtering gas coin`,
+                );
                 continue;
               }
-              
+
               // Select first non-gas coin as merge target
               const primaryCoin = mergeCandidates[0];
               // Remaining coins to be merged
               const otherCoins = mergeCandidates.slice(1);
-              
-              console.log(`Batch merging ${otherCoins.length} SUI coins into primary ${primaryCoin} (gas coin ${gasCoinId} not involved)`);
+
+              console.log(
+                `Batch merging ${otherCoins.length} SUI coins into primary ${primaryCoin} (gas coin ${gasCoinId} not involved)`,
+              );
               tx.mergeCoins(primaryCoin, otherCoins);
             } else {
               // For non-SUI coins, need at least 2 coins to merge
@@ -544,47 +590,63 @@ const CoinManager: React.FC = () => {
           await executeTransaction(
             tx,
             t("coinManager.batchMergeSuccess"),
-            'batchMerge'
+            "batchMerge",
           );
 
           // Refresh coin list
           fetchAllCoins();
         } catch (error) {
           console.error("Error batch merging coins:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, batchMerge: false }));
+          setLoadingState((prev) => ({ ...prev, batchMerge: false }));
         }
-      }
+      },
     });
   };
 
   // Optimized batch clean zero balance coins function
   const handleBatchCleanZero = async () => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
-    const coinTypesWithZeroBalance = coinTypeSummaries.filter(summary =>
-      summary.objects.some(coin => parseInt(coin.balance, 10) === 0)
+    const coinTypesWithZeroBalance = coinTypeSummaries.filter((summary) =>
+      summary.objects.some((coin) => parseInt(coin.balance, 10) === 0),
     );
 
     if (coinTypesWithZeroBalance.length === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noZeroCoins"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.noZeroCoins"),
+      );
       return;
     }
 
     // Collect all zero balance coins
     const allCoins: ExtendedCoinObject[] = [];
-    coinTypesWithZeroBalance.forEach(summary => {
+    coinTypesWithZeroBalance.forEach((summary) => {
       // Collect only zero balance coins
-      const zeroBalanceCoins = summary.objects.filter(coin => parseInt(coin.balance, 10) === 0);
-      zeroBalanceCoins.forEach(coin => {
+      const zeroBalanceCoins = summary.objects.filter(
+        (coin) => parseInt(coin.balance, 10) === 0,
+      );
+      zeroBalanceCoins.forEach((coin) => {
         allCoins.push({
           ...coin,
           symbol: summary.symbol,
-          iconUrl: summary.iconUrl
+          iconUrl: summary.iconUrl,
         });
       });
     });
@@ -597,10 +659,10 @@ const CoinManager: React.FC = () => {
       decimals: 9,
       operationType: "clean",
       onConfirm: async (selectedCoinIds: string[]) => {
-        setOperationDialog(prev => ({ ...prev, isOpen: false }));
+        setOperationDialog((prev) => ({ ...prev, isOpen: false }));
 
         try {
-          setLoadingState(prev => ({ ...prev, batchCleanZero: true }));
+          setLoadingState((prev) => ({ ...prev, batchCleanZero: true }));
 
           // Create a single transaction for all zero-balance coins
           const tx = new Transaction();
@@ -610,7 +672,7 @@ const CoinManager: React.FC = () => {
             // Find the coin type
             let coinType = "";
             for (const summary of coinTypeSummaries) {
-              const coin = summary.objects.find(c => c.id === coinId);
+              const coin = summary.objects.find((c) => c.id === coinId);
               if (coin) {
                 coinType = summary.type;
                 break;
@@ -630,35 +692,52 @@ const CoinManager: React.FC = () => {
           await executeTransaction(
             tx,
             `${t("coinManager.batchCleanSuccess")}: ${selectedCoinIds.length} ${t("coinManager.objects")}`,
-            'batchCleanZero'
+            "batchCleanZero",
           );
 
           // Refresh coin list
           fetchAllCoins();
         } catch (error) {
           console.error("Error batch cleaning zero-balance coins:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, batchCleanZero: false }));
+          setLoadingState((prev) => ({ ...prev, batchCleanZero: false }));
         }
-      }
+      },
     });
   };
 
   // Optimized merge function for single coin type
   const autoMergeCoins = async (coinType: string) => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
-    const summary = coinTypeSummaries.find(s => s.type === coinType);
+    const summary = coinTypeSummaries.find((s) => s.type === coinType);
     if (!summary) return;
 
     // SUI type requires at least 3 objects to merge (1 for gas, at least 2 for merging)
     // Other types require at least 2 objects to merge
-    if (summary.objects.length < 2 || (coinType === SUI_TYPE_ARG && summary.objects.length < 3)) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.notEnoughCoins"));
+    if (
+      summary.objects.length < 2 ||
+      (coinType === SUI_TYPE_ARG && summary.objects.length < 3)
+    ) {
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.notEnoughCoins"),
+      );
       return;
     }
 
@@ -671,60 +750,87 @@ const CoinManager: React.FC = () => {
       operationType: "merge",
       iconUrl: summary.iconUrl,
       onConfirm: async (selectedCoinIds: string[]) => {
-        setOperationDialog(prev => ({ ...prev, isOpen: false }));
+        setOperationDialog((prev) => ({ ...prev, isOpen: false }));
         try {
-          setLoadingState(prev => ({ ...prev, singleOperation: true }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: true }));
           const tx = new Transaction();
 
-          console.log(`Starting merge for ${coinType} with ${selectedCoinIds.length} selected coins`);
-          
+          console.log(
+            `Starting merge for ${coinType} with ${selectedCoinIds.length} selected coins`,
+          );
+
           if (coinType === SUI_TYPE_ARG) {
             // Get all SUI coins
             const allSuiCoins = summary.objects;
             console.log(`Total SUI coins: ${allSuiCoins.length}`);
-            
+
             // Check if enough coins are selected
             if (selectedCoinIds.length < 2) {
-              console.log(`Not enough SUI coins selected: ${selectedCoinIds.length}`);
-              toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.notEnoughCoins"));
+              console.log(
+                `Not enough SUI coins selected: ${selectedCoinIds.length}`,
+              );
+              toast.error(
+                t("coinManager.error.title") +
+                  ": " +
+                  t("coinManager.error.notEnoughCoins"),
+              );
               return;
             }
-            
+
             // Sort all SUI coins by balance to find the highest for gas
-            const sortedAllCoins = [...allSuiCoins]
-              .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
-            
+            const sortedAllCoins = [...allSuiCoins].sort((a, b) =>
+              Number(BigInt(b.balance) - BigInt(a.balance)),
+            );
+
             console.log("SUI coins sorted by balance:");
             sortedAllCoins.forEach((coin, index) => {
-              console.log(`Coin #${index + 1}: ID=${coin.id}, Balance=${formatBalance(coin.balance, summary.decimals)}`);
+              console.log(
+                `Coin #${index + 1}: ID=${coin.id}, Balance=${formatBalance(coin.balance, summary.decimals)}`,
+              );
             });
-            
+
             // Get highest balance SUI as gas (not participating in merge)
             const gasCoinId = sortedAllCoins[0].id;
-            console.log(`Using highest balance SUI as gas (not for merging): ${gasCoinId}`);
-            
+            console.log(
+              `Using highest balance SUI as gas (not for merging): ${gasCoinId}`,
+            );
+
             // Filter out gas coin from selected coins
-            const mergeCandidates = limitMergeCoinIds(selectedCoinIds.filter(id => id !== gasCoinId));
-            console.log(`Selected coins after filtering gas coin: ${mergeCandidates.length}`);
-            
+            const mergeCandidates = limitMergeCoinIds(
+              selectedCoinIds.filter((id) => id !== gasCoinId),
+            );
+            console.log(
+              `Selected coins after filtering gas coin: ${mergeCandidates.length}`,
+            );
+
             // Verify we still have enough coins to merge
             if (mergeCandidates.length < 2) {
               console.log("Not enough coins to merge after filtering gas coin");
-              toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.notEnoughCoins"));
+              toast.error(
+                t("coinManager.error.title") +
+                  ": " +
+                  t("coinManager.error.notEnoughCoins"),
+              );
               return;
             }
-            
+
             // Select first non-gas coin as merge target
             const primaryCoin = mergeCandidates[0];
             // Remaining coins to be merged
             const otherCoins = mergeCandidates.slice(1);
-            
-            console.log(`Merging ${otherCoins.length} SUI coins into primary ${primaryCoin} (gas coin ${gasCoinId} not involved)`);
+
+            console.log(
+              `Merging ${otherCoins.length} SUI coins into primary ${primaryCoin} (gas coin ${gasCoinId} not involved)`,
+            );
             tx.mergeCoins(primaryCoin, otherCoins);
           } else {
             // Logic for non-SUI merge remains unchanged
             if (selectedCoinIds.length < 2) {
-              toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.notEnoughCoins"));
+              toast.error(
+                t("coinManager.error.title") +
+                  ": " +
+                  t("coinManager.error.notEnoughCoins"),
+              );
               return;
             }
 
@@ -738,38 +844,52 @@ const CoinManager: React.FC = () => {
           await executeTransaction(
             tx,
             t("coinManager.mergeSuccess"),
-            'singleOperation'
+            "singleOperation",
           );
 
           setSelectedCoins(new Set());
           fetchAllCoins();
         } catch (error) {
           console.error("Error preparing merge transaction:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, singleOperation: false }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: false }));
         }
-      }
+      },
     });
   };
 
   // Optimized clean zero balance coins for single coin type
   const handleCleanZeroCoins = async (coinType: string) => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
-    const summary = coinTypeSummaries.find(s => s.type === coinType);
+    const summary = coinTypeSummaries.find((s) => s.type === coinType);
     if (!summary) return;
 
     // Filter zero balance coins
-    const zeroBalanceCoins = summary.objects.filter(coin =>
-      parseInt(coin.balance, 10) === 0
+    const zeroBalanceCoins = summary.objects.filter(
+      (coin) => parseInt(coin.balance, 10) === 0,
     );
 
     if (zeroBalanceCoins.length === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noZeroCoins"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.noZeroCoins"),
+      );
       return;
     }
 
@@ -782,15 +902,15 @@ const CoinManager: React.FC = () => {
       operationType: "clean",
       iconUrl: summary.iconUrl,
       onConfirm: async (selectedCoinIds: string[]) => {
-        setOperationDialog(prev => ({ ...prev, isOpen: false }));
+        setOperationDialog((prev) => ({ ...prev, isOpen: false }));
         try {
-          setLoadingState(prev => ({ ...prev, singleOperation: true }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: true }));
           const tx = new Transaction();
 
           // Process selected coins
           for (const coinId of selectedCoinIds) {
             // Double check that we only process zero balance coins
-            const coin = zeroBalanceCoins.find(c => c.id === coinId);
+            const coin = zeroBalanceCoins.find((c) => c.id === coinId);
             if (coin) {
               tx.moveCall({
                 target: "0x2::coin::destroy_zero",
@@ -803,29 +923,40 @@ const CoinManager: React.FC = () => {
           await executeTransaction(
             tx,
             `${t("coinManager.cleanSuccess")}: ${selectedCoinIds.length} ${t("coinManager.objects")}`,
-            'singleOperation'
+            "singleOperation",
           );
 
           fetchAllCoins();
         } catch (error) {
           console.error("Error preparing clean transaction:", error);
         } finally {
-          setLoadingState(prev => ({ ...prev, singleOperation: false }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: false }));
         }
-      }
+      },
     });
   };
 
   // Handle burn selected coins for a specific coin type
   const handleBurnSelectedCoins = async (coinType: string) => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
     if (selectedCoins.size === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noCoinsSelected"));
-      console.log("No coins selected for burning. Selected coins:", selectedCoins);
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.noCoinsSelected"),
+      );
+      console.log(
+        "No coins selected for burning. Selected coins:",
+        selectedCoins,
+      );
       return;
     }
 
@@ -836,10 +967,10 @@ const CoinManager: React.FC = () => {
       message: t("coinManager.confirmBurnMessage"),
       type: "single",
       onConfirm: async () => {
-        setBurnConfirmation(prev => ({ ...prev, isOpen: false }));
+        setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
         try {
-          setLoadingState(prev => ({ ...prev, singleOperation: true }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: true }));
 
           // Create transaction
           const tx = new Transaction();
@@ -847,17 +978,14 @@ const CoinManager: React.FC = () => {
 
           // Transfer to zero address (0x0) for both SUI and other coins
           for (const coinId of selectedCoinsArray) {
-            tx.transferObjects(
-              [tx.object(coinId)],
-              tx.pure.address("0x0")
-            );
+            tx.transferObjects([tx.object(coinId)], tx.pure.address("0x0"));
           }
 
           // Execute transaction
           await executeTransaction(
             tx,
             `${t("coinManager.burnSuccess")}: ${selectedCoinsArray.length} ${t("coinManager.objects")}`,
-            'singleOperation'
+            "singleOperation",
           );
 
           // Reset selection and refresh coin list
@@ -865,23 +993,33 @@ const CoinManager: React.FC = () => {
           fetchAllCoins();
         } catch (error) {
           console.error("Error burning coins:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, singleOperation: false }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: false }));
         }
-      }
+      },
     });
   };
 
   // Handle batch burning of coins (show all coins, default select low value coins)
   const handleBatchBurnLowValueCoins = async () => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
     // Debug info: how many SUI coins in total
-    const suiSummary = coinTypeSummaries.find(s => s.type === SUI_TYPE_ARG);
+    const suiSummary = coinTypeSummaries.find((s) => s.type === SUI_TYPE_ARG);
     if (suiSummary) {
       console.log(`Total SUI coin objects: ${suiSummary.objects.length}`);
     }
@@ -890,12 +1028,14 @@ const CoinManager: React.FC = () => {
     const batchCoins: ExtendedCoinObject[] = [];
     // Record low value coin IDs for default selection
     const lowValueCoinIds: string[] = [];
-    
+
     // Collect all coins and mark low value ones
     for (const summary of coinTypeSummaries) {
       // Output info for each coin type
-      console.log(`Processing coin type: ${summary.symbol}, count: ${summary.objects.length}, has price data: ${!!summary.price}`);
-      
+      console.log(
+        `Processing coin type: ${summary.symbol}, count: ${summary.objects.length}, has price data: ${!!summary.price}`,
+      );
+
       // Process each coin object
       for (const coin of summary.objects) {
         // Create extended coin object
@@ -904,47 +1044,61 @@ const CoinManager: React.FC = () => {
           symbol: summary.symbol,
           decimals: summary.decimals,
           price: summary.price,
-          type: summary.type // Ensure type field is correctly set
+          type: summary.type, // Ensure type field is correctly set
         };
-        
+
         // Add to batch coin list
         batchCoins.push(extendedCoin);
-        
+
         // If coin has zero balance, mark it for default selection
         if (Number(coin.balance) === 0) {
           lowValueCoinIds.push(coin.id);
           continue;
         }
-        
+
         // If price data is available, calculate value
         if (summary.price) {
-          const value = Number(coin.balance) / Math.pow(10, summary.decimals) * Number(summary.price);
+          const value =
+            (Number(coin.balance) / Math.pow(10, summary.decimals)) *
+            Number(summary.price);
           // Add more detailed logs specifically for SUI coins
           if (summary.type === SUI_TYPE_ARG) {
-            console.log(`SUI coin: ${coin.id}, balance=${coin.balance}, value=$${value.toFixed(4)}`);
+            console.log(
+              `SUI coin: ${coin.id}, balance=${coin.balance}, value=$${value.toFixed(4)}`,
+            );
           }
-          
+
           // Mark low value coins (value < $0.1)
           if (value < 0.1) {
             lowValueCoinIds.push(coin.id);
           }
         } else {
           // If no price data, treat as low value coin and select by default
-          console.log(`No price data coin: ${summary.symbol} (${coin.id}), balance=${coin.balance}`);
+          console.log(
+            `No price data coin: ${summary.symbol} (${coin.id}), balance=${coin.balance}`,
+          );
           lowValueCoinIds.push(coin.id);
         }
       }
     }
-    
+
     if (batchCoins.length === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noCoins"));
+      toast.error(
+        t("coinManager.error.title") + ": " + t("coinManager.error.noCoins"),
+      );
       return;
     }
 
     // Output debug info
-    console.log(`Batch burn - Total coin objects collected: ${batchCoins.length}`);
-    console.log(`Batch burn - Default selected low value coins: ${lowValueCoinIds.length}`);
-    console.log(`Batch burn - SUI coin count: ${batchCoins.filter(c => c.type === SUI_TYPE_ARG || c.type?.includes("sui::SUI")).length}`);
+    console.log(
+      `Batch burn - Total coin objects collected: ${batchCoins.length}`,
+    );
+    console.log(
+      `Batch burn - Default selected low value coins: ${lowValueCoinIds.length}`,
+    );
+    console.log(
+      `Batch burn - SUI coin count: ${batchCoins.filter((c) => c.type === SUI_TYPE_ARG || c.type?.includes("sui::SUI")).length}`,
+    );
 
     // Update state
     setAllCoinsForBurnDialog(batchCoins);
@@ -958,39 +1112,49 @@ const CoinManager: React.FC = () => {
       decimals: 9, // Default precision
       onConfirm: (selectedCoinIds: string[]) => {
         handleBatchBurnConfirmed(selectedCoinIds);
-      }
+      },
     });
 
     // Set default selected coins after dialog initialization
     setTimeout(() => {
-      const dialogElement = document.querySelector('.chakra-modal__content');
+      const dialogElement = document.querySelector(".chakra-modal__content");
       if (dialogElement) {
         // Create custom event to pass default selected coin IDs
-        const event = new CustomEvent('updateCoins', { 
+        const event = new CustomEvent("updateCoins", {
           bubbles: true,
-          detail: { defaultSelectedIds: lowValueCoinIds }
+          detail: { defaultSelectedIds: lowValueCoinIds },
         });
         dialogElement.dispatchEvent(event);
       }
     }, 100);
   };
-  
+
   // Handle batch burn confirmation
   const handleBatchBurnConfirmed = async (coinIds: string[]) => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
     if (coinIds.length === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noCoinsSelected"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.noCoinsSelected"),
+      );
       return;
     }
 
-    setBurnSelectionDialog(prev => ({ ...prev, isOpen: false }));
+    setBurnSelectionDialog((prev) => ({ ...prev, isOpen: false }));
 
     // Create message text, including a note that some coins may not have price data
-    const messageText = t("coinManager.confirmBurnMessage", { count: coinIds.length });
+    const messageText = t("coinManager.confirmBurnMessage", {
+      count: coinIds.length,
+    });
 
     // Show confirmation dialog
     setBurnConfirmation({
@@ -999,10 +1163,10 @@ const CoinManager: React.FC = () => {
       message: messageText,
       type: "batch",
       onConfirm: async () => {
-        setBurnConfirmation(prev => ({ ...prev, isOpen: false }));
+        setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
         try {
-          setLoadingState(prev => ({ ...prev, batchBurn: true }));
+          setLoadingState((prev) => ({ ...prev, batchBurn: true }));
 
           // Create transaction
           const tx = new Transaction();
@@ -1010,16 +1174,17 @@ const CoinManager: React.FC = () => {
 
           // Transfer all selected coins to zero address (0x0)
           for (const coinId of coinIds) {
-            tx.transferObjects(
-              [tx.object(coinId)],
-              tx.pure.address("0x0")
-            );
+            tx.transferObjects([tx.object(coinId)], tx.pure.address("0x0"));
             burnCount++;
           }
 
           if (burnCount === 0) {
-            toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noCoinsSelected"));
-            setLoadingState(prev => ({ ...prev, batchBurn: false }));
+            toast.error(
+              t("coinManager.error.title") +
+                ": " +
+                t("coinManager.error.noCoinsSelected"),
+            );
+            setLoadingState((prev) => ({ ...prev, batchBurn: false }));
             return;
           }
 
@@ -1027,24 +1192,30 @@ const CoinManager: React.FC = () => {
           await executeTransaction(
             tx,
             `${t("coinManager.batchBurnSuccess")}: ${burnCount} ${t("coinManager.objects")}`,
-            'batchBurn'
+            "batchBurn",
           );
 
           // Refresh coin list
           fetchAllCoins();
         } catch (error) {
           console.error("Error batch burning coins:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, batchBurn: false }));
+          setLoadingState((prev) => ({ ...prev, batchBurn: false }));
         }
-      }
+      },
     });
   };
 
   // Handle the burn dialog showing
   const handleShowBurnDialog = (coinType: string) => {
-    const summary = coinTypeSummaries.find(s => s.type === coinType);
+    const summary = coinTypeSummaries.find((s) => s.type === coinType);
     if (!summary) return;
 
     setBurnSelectionDialog({
@@ -1055,20 +1226,24 @@ const CoinManager: React.FC = () => {
       decimals: summary.decimals,
       onConfirm: (selectedCoinIds: string[]) => {
         handleBurnCoins(coinType, selectedCoinIds);
-      }
+      },
     });
   };
 
   // Reset selection when dialog closes
   const handleBurnDialogClose = () => {
-    setBurnSelectionDialog(prev => ({ ...prev, isOpen: false }));
+    setBurnSelectionDialog((prev) => ({ ...prev, isOpen: false }));
     // Don't reset selection here, as it might be a cancel operation
   };
 
   // Handle burning a single coin
   const handleBurnSingleCoin = async (coinId: string) => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
@@ -1078,7 +1253,7 @@ const CoinManager: React.FC = () => {
     let foundSummary = null;
 
     for (const summary of coinTypeSummaries) {
-      const coin = summary.objects.find(c => c.id === coinId);
+      const coin = summary.objects.find((c) => c.id === coinId);
       if (coin) {
         foundCoinType = summary.type;
         foundCoin = coin;
@@ -1091,70 +1266,83 @@ const CoinManager: React.FC = () => {
       console.error("Coin not found:", coinId);
       return;
     }
-    
+
     // Format balance according to decimals
-    const formattedBalance = (Number(foundCoin.balance) / Math.pow(10, foundSummary.decimals)).toLocaleString(undefined, {
+    const formattedBalance = (
+      Number(foundCoin.balance) / Math.pow(10, foundSummary.decimals)
+    ).toLocaleString(undefined, {
       minimumFractionDigits: 0,
-      maximumFractionDigits: foundSummary.decimals
+      maximumFractionDigits: foundSummary.decimals,
     });
 
     // Show confirmation dialog
     setBurnConfirmation({
       isOpen: true,
       title: t("coinManager.confirmBurnSingle"),
-      message: t("coinManager.confirmBurnSingleMessage", { 
-        balance: formattedBalance, 
-        symbol: foundSummary.symbol || formatCoinType(foundCoinType) 
+      message: t("coinManager.confirmBurnSingleMessage", {
+        balance: formattedBalance,
+        symbol: foundSummary.symbol || formatCoinType(foundCoinType),
       }),
       type: "single",
       onConfirm: async () => {
-        setBurnConfirmation(prev => ({ ...prev, isOpen: false }));
-        
+        setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
+
         try {
-          setLoadingState(prev => ({ ...prev, singleOperation: true }));
-          
+          setLoadingState((prev) => ({ ...prev, singleOperation: true }));
+
           // Create transaction
           const tx = new Transaction();
-          
+
           // Transfer to zero address (0x0)
-          tx.transferObjects(
-            [tx.object(coinId)],
-            tx.pure.address("0x0")
-          );
-          
+          tx.transferObjects([tx.object(coinId)], tx.pure.address("0x0"));
+
           // Execute transaction
           await executeTransaction(
             tx,
             t("coinManager.burnSuccess") + ": 1 " + t("coinManager.object"),
-            'singleOperation'
+            "singleOperation",
           );
-          
+
           // Refresh coin list
           fetchAllCoins();
         } catch (error) {
           console.error("Error burning coin:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, singleOperation: false }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: false }));
         }
-      }
+      },
     });
   };
 
   // Handle burning multiple selected coins
   const handleBurnCoins = async (coinType: string, coinIds: string[]) => {
     if (!currentAccount) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.connectWallet"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.connectWallet"),
+      );
       return;
     }
 
     if (coinIds.length === 0) {
-      toast.error(t("coinManager.error.title") + ": " + t("coinManager.error.noCoinsSelected"));
+      toast.error(
+        t("coinManager.error.title") +
+          ": " +
+          t("coinManager.error.noCoinsSelected"),
+      );
       console.log("No coins selected for burning. Selected coins:", coinIds);
       return;
     }
 
-    setBurnSelectionDialog(prev => ({ ...prev, isOpen: false }));
+    setBurnSelectionDialog((prev) => ({ ...prev, isOpen: false }));
 
     // Show confirmation dialog
     setBurnConfirmation({
@@ -1163,27 +1351,24 @@ const CoinManager: React.FC = () => {
       message: t("coinManager.confirmBurnMessage", { count: coinIds.length }),
       type: "single",
       onConfirm: async () => {
-        setBurnConfirmation(prev => ({ ...prev, isOpen: false }));
+        setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
         try {
-          setLoadingState(prev => ({ ...prev, singleOperation: true }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: true }));
 
           // Create transaction
           const tx = new Transaction();
 
           // Transfer all coins to zero address (0x0)
           for (const coinId of coinIds) {
-            tx.transferObjects(
-              [tx.object(coinId)],
-              tx.pure.address("0x0")
-            );
+            tx.transferObjects([tx.object(coinId)], tx.pure.address("0x0"));
           }
 
           // Execute transaction
           await executeTransaction(
             tx,
             `${t("coinManager.burnSuccess")}: ${coinIds.length} ${t("coinManager.objects")}`,
-            'singleOperation'
+            "singleOperation",
           );
 
           // Reset selection and refresh coin list
@@ -1191,11 +1376,17 @@ const CoinManager: React.FC = () => {
           fetchAllCoins();
         } catch (error) {
           console.error("Error burning coins:", error);
-          toast.error(t("coinManager.error.operationFailed") + ": " + (error instanceof Error ? error.message : t("coinManager.error.unknownError")));
+          toast.error(
+            t("coinManager.error.operationFailed") +
+              ": " +
+              (error instanceof Error
+                ? error.message
+                : t("coinManager.error.unknownError")),
+          );
         } finally {
-          setLoadingState(prev => ({ ...prev, singleOperation: false }));
+          setLoadingState((prev) => ({ ...prev, singleOperation: false }));
         }
-      }
+      },
     });
   };
 
@@ -1203,17 +1394,19 @@ const CoinManager: React.FC = () => {
   useEffect(() => {
     // Clear current list first to prevent showing old network data
     setCoinTypeSummaries([]);
-    
+
     // Add a small delay to ensure the network is fully synchronized
     const timer = setTimeout(() => {
       if (currentAccount) {
-        console.log(`Preparing to fetch coin data, current network: ${walletNetwork}`);
-        setLoadingState(prev => ({ ...prev, networkSync: false })); // Update network sync state
+        console.log(
+          `Preparing to fetch coin data, current network: ${walletNetwork}`,
+        );
+        setLoadingState((prev) => ({ ...prev, networkSync: false })); // Update network sync state
       } else {
-        setLoadingState(prev => ({ ...prev, networkSync: false })); // Also update state if wallet not connected
+        setLoadingState((prev) => ({ ...prev, networkSync: false })); // Also update state if wallet not connected
       }
     }, 500); // 500ms delay to wait for network sync to complete
-    
+
     return () => clearTimeout(timer);
   }, [currentAccount, walletNetwork, fetchAllCoins]);
 
@@ -1227,7 +1420,7 @@ const CoinManager: React.FC = () => {
           <Text color="gray.600" mb={2}>
             {t("coinManager.description")}
           </Text>
-          
+
           {/* Add manual refresh button */}
           <Button
             size="sm"
@@ -1238,8 +1431,18 @@ const CoinManager: React.FC = () => {
             loadingText={t("coinManager.loading")}
           >
             <Flex gap="2" alignItems="center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38" />
               </svg>
               {t("coinManager.refreshCoins")}
             </Flex>
@@ -1258,9 +1461,19 @@ const CoinManager: React.FC = () => {
                     colorPalette="blue"
                     variant="solid"
                     loadingText={t("coinManager.loading")}
-                    disabled={!hasMergeableCoins || loadingState.fetchCoins || loadingState.batchMerge || loadingState.batchCleanZero || loadingState.singleOperation}
+                    disabled={
+                      !hasMergeableCoins ||
+                      loadingState.fetchCoins ||
+                      loadingState.batchMerge ||
+                      loadingState.batchCleanZero ||
+                      loadingState.singleOperation
+                    }
                     onClick={handleBatchMerge}
-                    title={!hasMergeableCoins ? t("coinManager.error.notEnoughCoins") : t("coinManager.batchMerge")}
+                    title={
+                      !hasMergeableCoins
+                        ? t("coinManager.error.notEnoughCoins")
+                        : t("coinManager.batchMerge")
+                    }
                     loading={loadingState.batchMerge}
                   >
                     {t("coinManager.batchMerge")}
@@ -1270,9 +1483,19 @@ const CoinManager: React.FC = () => {
                     colorPalette="red"
                     variant="solid"
                     loadingText={t("coinManager.loading")}
-                    disabled={!hasZeroBalanceCoins || loadingState.fetchCoins || loadingState.batchMerge || loadingState.batchCleanZero || loadingState.singleOperation}
+                    disabled={
+                      !hasZeroBalanceCoins ||
+                      loadingState.fetchCoins ||
+                      loadingState.batchMerge ||
+                      loadingState.batchCleanZero ||
+                      loadingState.singleOperation
+                    }
                     onClick={handleBatchCleanZero}
-                    title={!hasZeroBalanceCoins ? t("coinManager.error.noZeroCoins") : t("coinManager.batchClean")}
+                    title={
+                      !hasZeroBalanceCoins
+                        ? t("coinManager.error.noZeroCoins")
+                        : t("coinManager.batchClean")
+                    }
                     loading={loadingState.batchCleanZero}
                   >
                     {t("coinManager.batchClean")}
@@ -1282,7 +1505,13 @@ const CoinManager: React.FC = () => {
                     colorPalette="orange"
                     variant="solid"
                     loadingText={t("coinManager.loading")}
-                    disabled={loadingState.fetchCoins || loadingState.batchMerge || loadingState.batchCleanZero || loadingState.batchBurn || loadingState.singleOperation}
+                    disabled={
+                      loadingState.fetchCoins ||
+                      loadingState.batchMerge ||
+                      loadingState.batchCleanZero ||
+                      loadingState.batchBurn ||
+                      loadingState.singleOperation
+                    }
                     onClick={handleBatchBurnLowValueCoins}
                     title={t("coinManager.batchBurn")}
                     loading={loadingState.batchBurn}
@@ -1292,17 +1521,19 @@ const CoinManager: React.FC = () => {
                 </Flex>
               </Flex>
 
-              {loadingState.networkSync || loadingState.fetchCoins || loadingState.fetchPrices ? (
-                                  <Box textAlign="center" py={10}>
-                    <Spinner size="xl" />
-                    <Text mt={4}>
-                      {loadingState.networkSync 
-                        ? t("coinManager.syncingNetwork") 
-                        : loadingState.fetchPrices 
-                          ? t("coinManager.loadingPrices")
-                          : t("coinManager.loading")}
-                    </Text>
-                  </Box>
+              {loadingState.networkSync ||
+              loadingState.fetchCoins ||
+              loadingState.fetchPrices ? (
+                <Box textAlign="center" py={10}>
+                  <Spinner size="xl" />
+                  <Text mt={4}>
+                    {loadingState.networkSync
+                      ? t("coinManager.syncingNetwork")
+                      : loadingState.fetchPrices
+                        ? t("coinManager.loadingPrices")
+                        : t("coinManager.loading")}
+                  </Text>
+                </Box>
               ) : coinTypeSummaries.length === 0 ? (
                 <Box p={4} bg="teal.50" color="teal.800" borderRadius="md">
                   <Text>{t("coinManager.noCoins")}</Text>
@@ -1331,10 +1562,16 @@ const CoinManager: React.FC = () => {
       <BurnConfirmationDialog
         isOpen={burnConfirmation.isOpen}
         title={burnConfirmation.title}
-        onClose={() => setBurnConfirmation(prev => ({ ...prev, isOpen: false }))}
+        onClose={() =>
+          setBurnConfirmation((prev) => ({ ...prev, isOpen: false }))
+        }
         onConfirm={burnConfirmation.onConfirm}
         message={burnConfirmation.message}
-        isLoading={burnConfirmation.type === "single" ? loadingState.singleOperation : loadingState.batchBurn}
+        isLoading={
+          burnConfirmation.type === "single"
+            ? loadingState.singleOperation
+            : loadingState.batchBurn
+        }
       />
 
       {/* Burn selection dialog */}
@@ -1342,38 +1579,57 @@ const CoinManager: React.FC = () => {
         isOpen={burnSelectionDialog.isOpen}
         onClose={handleBurnDialogClose}
         onConfirm={burnSelectionDialog.onConfirm}
-        coins={burnSelectionDialog.coinType === "batch-burn" 
-          ? allCoinsForBurnDialog || [] 
-          : coinTypeSummaries.find(s => s.type === burnSelectionDialog.coinType)?.objects || []}
+        coins={
+          burnSelectionDialog.coinType === "batch-burn"
+            ? allCoinsForBurnDialog || []
+            : coinTypeSummaries.find(
+                (s) => s.type === burnSelectionDialog.coinType,
+              )?.objects || []
+        }
         coinType={burnSelectionDialog.coinType}
         symbol={burnSelectionDialog.symbol}
-        price={burnSelectionDialog.coinType === "batch-burn"
-          ? null
-          : coinTypeSummaries.find(s => s.type === burnSelectionDialog.coinType)?.price || null}
+        price={
+          burnSelectionDialog.coinType === "batch-burn"
+            ? null
+            : coinTypeSummaries.find(
+                (s) => s.type === burnSelectionDialog.coinType,
+              )?.price || null
+        }
         decimals={burnSelectionDialog.decimals}
-        isLoading={burnSelectionDialog.coinType === "batch-burn" ? loadingState.batchBurn : loadingState.singleOperation}
+        isLoading={
+          burnSelectionDialog.coinType === "batch-burn"
+            ? loadingState.batchBurn
+            : loadingState.singleOperation
+        }
       />
 
       {/* Operation dialog */}
       <CoinOperationDialog
         isOpen={operationDialog.isOpen}
-        onClose={() => setOperationDialog(prev => ({ ...prev, isOpen: false }))}
+        onClose={() =>
+          setOperationDialog((prev) => ({ ...prev, isOpen: false }))
+        }
         onConfirm={operationDialog.onConfirm}
-        coins={operationDialog.coinType === "batch-operation" 
-          ? coinTypeSummaries.flatMap(summary => 
-              summary.objects.map(coin => ({
-                ...coin,
-                symbol: summary.symbol,
-                iconUrl: summary.iconUrl
-              }))
-            )
-          : coinTypeSummaries.find(s => s.type === operationDialog.coinType)?.objects || []}
+        coins={
+          operationDialog.coinType === "batch-operation"
+            ? coinTypeSummaries.flatMap((summary) =>
+                summary.objects.map((coin) => ({
+                  ...coin,
+                  symbol: summary.symbol,
+                  iconUrl: summary.iconUrl,
+                })),
+              )
+            : coinTypeSummaries.find((s) => s.type === operationDialog.coinType)
+                ?.objects || []
+        }
         coinType={operationDialog.coinType}
         symbol={operationDialog.symbol}
         decimals={operationDialog.decimals}
-        isLoading={operationDialog.operationType === "merge" 
-          ? loadingState.batchMerge 
-          : loadingState.batchCleanZero}
+        isLoading={
+          operationDialog.operationType === "merge"
+            ? loadingState.batchMerge
+            : loadingState.batchCleanZero
+        }
         operationType={operationDialog.operationType}
         iconUrl={operationDialog.iconUrl}
       />

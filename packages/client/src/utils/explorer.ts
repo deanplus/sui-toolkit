@@ -8,8 +8,11 @@
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the address in Suivision
  */
-export const getSuivisionUrl = (address: string, network: string = "mainnet") => {
-    return `https://${network}.suivision.xyz/account/${address}`;
+export const getSuivisionUrl = (
+  address: string,
+  network: string = "mainnet",
+) => {
+  return `https://${network}.suivision.xyz/account/${address}`;
 };
 
 /**
@@ -18,8 +21,11 @@ export const getSuivisionUrl = (address: string, network: string = "mainnet") =>
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the transaction in Suivision
  */
-export const getSuivisionTxUrl = (digest: string, network: string = "mainnet") => {
-    return `https://${network}.suivision.xyz/txblock/${digest}`;
+export const getSuivisionTxUrl = (
+  digest: string,
+  network: string = "mainnet",
+) => {
+  return `https://${network}.suivision.xyz/txblock/${digest}`;
 };
 
 /**
@@ -29,7 +35,7 @@ export const getSuivisionTxUrl = (digest: string, network: string = "mainnet") =
  * @returns The complete URL to view the address in Suiscan
  */
 export const getSuiscanUrl = (address: string, network: string = "mainnet") => {
-    return `https://suiscan.xyz/${network}/account/${address}`;
+  return `https://suiscan.xyz/${network}/account/${address}`;
 };
 
 /**
@@ -38,8 +44,11 @@ export const getSuiscanUrl = (address: string, network: string = "mainnet") => {
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the transaction in Suiscan
  */
-export const getSuiscanTxUrl = (digest: string, network: string = "mainnet") => {
-    return `https://suiscan.xyz/${network}/tx/${digest}`;
+export const getSuiscanTxUrl = (
+  digest: string,
+  network: string = "mainnet",
+) => {
+  return `https://suiscan.xyz/${network}/tx/${digest}`;
 };
 
 /**
@@ -48,8 +57,11 @@ export const getSuiscanTxUrl = (digest: string, network: string = "mainnet") => 
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the address in Sui explorer
  */
-export const getSuiExplorerUrl = (address: string, network: string = "mainnet") => {
-    return `https://explorer.sui.io/address/${address}?network=${network}`;
+export const getSuiExplorerUrl = (
+  address: string,
+  network: string = "mainnet",
+) => {
+  return `https://explorer.sui.io/address/${address}?network=${network}`;
 };
 
 /**
@@ -58,8 +70,11 @@ export const getSuiExplorerUrl = (address: string, network: string = "mainnet") 
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the transaction in Sui explorer
  */
-export const getSuiExplorerTxUrl = (digest: string, network: string = "mainnet") => {
-    return `https://explorer.sui.io/txblock/${digest}?network=${network}`;
+export const getSuiExplorerTxUrl = (
+  digest: string,
+  network: string = "mainnet",
+) => {
+  return `https://explorer.sui.io/txblock/${digest}?network=${network}`;
 };
 
 /**
@@ -68,8 +83,11 @@ export const getSuiExplorerTxUrl = (digest: string, network: string = "mainnet")
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the address in the default explorer
  */
-export const getExplorerUrl = (address: string, network: string = "mainnet") => {
-    return getSuivisionUrl(address, network);
+export const getExplorerUrl = (
+  address: string,
+  network: string = "mainnet",
+) => {
+  return getSuivisionUrl(address, network);
 };
 
 /**
@@ -78,6 +96,9 @@ export const getExplorerUrl = (address: string, network: string = "mainnet") => 
  * @param network The network (mainnet, testnet, devnet, etc.)
  * @returns The complete URL to view the transaction in the default explorer
  */
-export const getExplorerTxUrl = (digest: string, network: string = "mainnet") => {
-    return getSuivisionTxUrl(digest, network);
-}; 
+export const getExplorerTxUrl = (
+  digest: string,
+  network: string = "mainnet",
+) => {
+  return getSuivisionTxUrl(digest, network);
+};

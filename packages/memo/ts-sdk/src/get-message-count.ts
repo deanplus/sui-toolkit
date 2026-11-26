@@ -1,45 +1,45 @@
-import { getFullnodeUrl, SuiClient, } from '@mysten/sui/client';
-import { Transaction, namedPackagesPlugin } from '@mysten/sui/transactions';
-import { bcs } from '@mysten/sui/bcs';
-import config from './config';
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { Transaction, namedPackagesPlugin } from "@mysten/sui/transactions";
+import { bcs } from "@mysten/sui/bcs";
+import config from "./config";
 
-type ChainNetwork = 'mainnet' | 'testnet' | 'devnet' | 'localnet'
+type ChainNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 type NetworkConfig = typeof config;
 type NetworkKey = keyof NetworkConfig;
-
 
 /**
  * Gets the total number of messages on the memo board
  * @returns The total count of messages
  */
-async function getMessageCount(network: ChainNetwork = 'mainnet') {
+async function getMessageCount(network: ChainNetwork = "mainnet") {
   // Convert network to uppercase as a valid config key
   const networkKey = network.toUpperCase() as NetworkKey;
-  const MEMO_PACKAGE = config[networkKey].MEMO_PACKAGE_ID || config[networkKey].MEMO_MVR;
+  const MEMO_PACKAGE =
+    config[networkKey].MEMO_PACKAGE_ID || config[networkKey].MEMO_MVR;
   const MEMO_BOARD_OBJECT_ID = config[networkKey].MEMO_BOARD_OBJECT_ID;
   if (!MEMO_PACKAGE || !MEMO_BOARD_OBJECT_ID) {
-    throw new Error('Memo package ID or board object ID is not set');
+    throw new Error("Memo package ID or board object ID is not set");
   }
-
 
   try {
     // Create a transaction block to call the message_count function
     const tx = new Transaction();
-    const plugin = namedPackagesPlugin({ url: config[networkKey].MVR_ENDPOINT });
+    const plugin = namedPackagesPlugin({
+      url: config[networkKey].MVR_ENDPOINT,
+    });
     tx.addSerializationPlugin(plugin);
- 
+
     tx.moveCall({
       target: `${MEMO_PACKAGE}::memo::message_count`,
-      arguments: [
-        tx.object(MEMO_BOARD_OBJECT_ID)
-      ]
+      arguments: [tx.object(MEMO_BOARD_OBJECT_ID)],
     });
 
     // Execute the transaction in readonly mode to get the result
     const client = new SuiClient({ url: getFullnodeUrl(network) });
     const result = await client.devInspectTransactionBlock({
       transactionBlock: tx,
-      sender: '0x0000000000000000000000000000000000000000000000000000000000000000'
+      sender:
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
     });
 
     // Parse the result
@@ -50,23 +50,23 @@ async function getMessageCount(network: ChainNetwork = 'mainnet') {
       return messageCount;
     }
   } catch (error) {
-    console.error('Failed to get message count:', error);
+    console.error("Failed to get message count:", error);
   }
 }
 
 async function main() {
-  const network = process.argv[2] || 'mainnet';
-  if (network !== 'mainnet' && network !== 'testnet') {
-    console.error('Invalid network parameter');
+  const network = process.argv[2] || "mainnet";
+  if (network !== "mainnet" && network !== "testnet") {
+    console.error("Invalid network parameter");
     process.exit(1);
   }
 
   try {
     // Get the total message count
-    const count = await getMessageCount(network as 'mainnet' | 'testnet');
+    const count = await getMessageCount(network as "mainnet" | "testnet");
     console.log(`The memo board currently has ${count} messages`);
   } catch (error) {
-    console.error('Execution failed:', error);
+    console.error("Execution failed:", error);
   }
 }
 

@@ -22,7 +22,7 @@ const LanguageSwitcher: React.FC = () => {
   };
 
   // Extract the base language code (e.g., 'en' from 'en-US')
-  const currentLanguage = i18n.language?.split('-')[0] || 'en';
+  const currentLanguage = i18n.language?.split("-")[0] || "en";
 
   return (
     <Box>

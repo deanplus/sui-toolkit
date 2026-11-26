@@ -18,6 +18,7 @@ Currently, Sui Toolkit offers the following features:
 
 We plan to continuously expand the functionality of Sui Toolkit by adding more practical tools to further enhance the development experience in the Sui ecosystem.
 These upcoming features include:
+
 - Walrus faucet integration and file management capabilities
 - Comprehensive Sui environment statistics
 

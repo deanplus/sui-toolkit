@@ -31,7 +31,7 @@ const NavLink = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // 检查当前路径是否与此链接的路径匹配
   const isActive = location.pathname === to;
 
@@ -44,13 +44,13 @@ const NavLink = ({
       position="relative"
       _after={{
         content: '""',
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        width: '100%',
-        height: '2px',
-        bg: isActive ? 'blue.500' : 'transparent',
-        transition: 'all 0.2s ease-in-out'
+        position: "absolute",
+        bottom: "0",
+        left: "0",
+        width: "100%",
+        height: "2px",
+        bg: isActive ? "blue.500" : "transparent",
+        transition: "all 0.2s ease-in-out",
       }}
     >
       {children}
@@ -129,7 +129,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {t("common.footer", { year: new Date().getFullYear() })}
             </Text>
             <HStack gap={4}>
-              <Link href="https://github.com/deanplus/sui-toolkit" target="_blank">
+              <Link
+                href="https://github.com/deanplus/sui-toolkit"
+                target="_blank"
+              >
                 <Icon as={FaGithub} boxSize={5} color="gray.600" />
               </Link>
               <Link href="https://x.com/deanplus" target="_blank">

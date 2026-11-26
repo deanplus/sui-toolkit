@@ -58,14 +58,14 @@ export const useWalletNetwork = (autoSync = false) => {
 // 获取网络标签颜色
 export const getNetworkTagColor = (network: string) => {
   switch (network) {
-    case 'mainnet':
-      return 'green';
-    case 'testnet':
-      return 'orange';
-    case 'devnet':
-      return 'purple';
+    case "mainnet":
+      return "green";
+    case "testnet":
+      return "orange";
+    case "devnet":
+      return "purple";
     default:
-      return 'gray';
+      return "gray";
   }
 };
 

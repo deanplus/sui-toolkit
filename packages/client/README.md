@@ -11,12 +11,10 @@ In the project directory, you can run:
 Runs the app in development mode.  
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-
 ### `pnpm build`
 
 Builds the production version of the app to the `build` folder.  
 It correctly bundles React and optimizes the build for best performance.
-
 
 ## Deployment Instructions
 
@@ -25,6 +23,7 @@ It correctly bundles React and optimizes the build for best performance.
 3. Ensure the server is configured to handle single-page application routing
 
 ### Deployment to Walrus site
+
 ```
 site-builder publish ./build \
 --site-name sui-toolkit \

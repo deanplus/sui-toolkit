@@ -67,7 +67,10 @@ const BulkTransfer: React.FC = () => {
   }, [fetchAccountBalance]);
 
   const addNewRow = () => {
-    setTransferItems([...transferItems, { address: "", amount: "", isValidAddress: true }]);
+    setTransferItems([
+      ...transferItems,
+      { address: "", amount: "", isValidAddress: true },
+    ]);
   };
 
   const handleChange = (
@@ -192,7 +195,8 @@ const BulkTransfer: React.FC = () => {
 
           {currentAccount && (
             <Text mb={4}>
-              {t("bulkTransfer.availableBalance")}: {formatBalance(accountBalance)} SUI
+              {t("bulkTransfer.availableBalance")}:{" "}
+              {formatBalance(accountBalance)} SUI
             </Text>
           )}
 
@@ -228,7 +232,9 @@ const BulkTransfer: React.FC = () => {
                         }
                         placeholder="0x..."
                         borderColor={
-                          item.address && !item.isValidAddress ? "red.500" : undefined
+                          item.address && !item.isValidAddress
+                            ? "red.500"
+                            : undefined
                         }
                       />
                     </td>
@@ -280,13 +286,21 @@ const BulkTransfer: React.FC = () => {
             </Button>
 
             {lastTxDigest && (
-              <Box mt={4} p={4} borderWidth="1px" borderRadius="md" width="full" bg="blue.50">
+              <Box
+                mt={4}
+                p={4}
+                borderWidth="1px"
+                borderRadius="md"
+                width="full"
+                bg="blue.50"
+              >
                 <Text fontSize="sm" mb={2}>
                   {t("bulkTransfer.transactionComplete")}
                 </Text>
                 <HStack>
                   <Text fontWeight="semibold" fontSize="sm" truncate>
-                    {t("bulkTransfer.transactionDigest")}: {lastTxDigest.slice(0, 8)}...{lastTxDigest.slice(-6)}
+                    {t("bulkTransfer.transactionDigest")}:{" "}
+                    {lastTxDigest.slice(0, 8)}...{lastTxDigest.slice(-6)}
                   </Text>
                   <Link
                     href={getExplorerTxUrl(lastTxDigest, network)}

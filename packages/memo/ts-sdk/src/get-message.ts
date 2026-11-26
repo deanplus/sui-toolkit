@@ -1,9 +1,9 @@
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction, namedPackagesPlugin } from '@mysten/sui/transactions';
-import { bcs } from '@mysten/sui/bcs';
-import config from './config';
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { Transaction, namedPackagesPlugin } from "@mysten/sui/transactions";
+import { bcs } from "@mysten/sui/bcs";
+import config from "./config";
 
-type ChainNetwork = 'mainnet' | 'testnet' | 'devnet' | 'localnet'
+type ChainNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 type NetworkConfig = typeof config;
 type NetworkKey = keyof NetworkConfig;
 
@@ -13,87 +13,97 @@ type NetworkKey = keyof NetworkConfig;
  * @param network The network to connect to
  * @returns The message content, author address, and creation timestamp
  */
-async function getMessage(messageId: bigint, network: ChainNetwork = 'mainnet') {
+async function getMessage(
+  messageId: bigint,
+  network: ChainNetwork = "mainnet",
+) {
   // Convert network to uppercase as a valid config key
   const networkKey = network.toUpperCase() as NetworkKey;
-  const MEMO_PACKAGE = config[networkKey].MEMO_PACKAGE_ID || config[networkKey].MEMO_MVR;
+  const MEMO_PACKAGE =
+    config[networkKey].MEMO_PACKAGE_ID || config[networkKey].MEMO_MVR;
   const MEMO_BOARD_OBJECT_ID = config[networkKey].MEMO_BOARD_OBJECT_ID;
   if (!MEMO_PACKAGE || !MEMO_BOARD_OBJECT_ID) {
-    throw new Error('Memo package ID or board object ID is not set');
+    throw new Error("Memo package ID or board object ID is not set");
   }
 
   try {
     // Create a transaction block to call the get_message function
     const tx = new Transaction();
-    const plugin = namedPackagesPlugin({ url: config[networkKey].MVR_ENDPOINT });
+    const plugin = namedPackagesPlugin({
+      url: config[networkKey].MVR_ENDPOINT,
+    });
     tx.addSerializationPlugin(plugin);
 
     tx.moveCall({
       target: `${MEMO_PACKAGE}::memo::get_message`,
-      arguments: [
-        tx.object(MEMO_BOARD_OBJECT_ID),
-        tx.pure.u64(messageId)
-      ],
+      arguments: [tx.object(MEMO_BOARD_OBJECT_ID), tx.pure.u64(messageId)],
     });
 
     // Execute the transaction in readonly mode to get the result
     const client = new SuiClient({ url: getFullnodeUrl(network) });
     const result = await client.devInspectTransactionBlock({
       transactionBlock: tx,
-      sender: '0x0000000000000000000000000000000000000000000000000000000000000000'
+      sender:
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
     });
 
     // Parse the result
     if (result.results && result.results[0]?.returnValues) {
       // The function returns a tuple (String, address, u64)
-      const [contentBytes, authorBytes, timestampBytes] = result.results[0].returnValues;
-      
+      const [contentBytes, authorBytes, timestampBytes] =
+        result.results[0].returnValues;
+
       // Parse content (String)
       const content = new TextDecoder().decode(new Uint8Array(contentBytes[0]));
-      
+
       // Parse author (address)
-      const author = '0x' + Buffer.from(authorBytes[0]).toString('hex');
-      
+      const author = "0x" + Buffer.from(authorBytes[0]).toString("hex");
+
       // Parse timestamp (u64)
       const timestamp = bcs.U64.parse(new Uint8Array(timestampBytes[0]));
-      
+
       return {
         content,
         author,
-        createdAt: timestamp
+        createdAt: timestamp,
       };
     }
-    
-    throw new Error('Failed to parse message data');
+
+    throw new Error("Failed to parse message data");
   } catch (error) {
-    console.error('Failed to get message:', error);
+    console.error("Failed to get message:", error);
     throw error;
   }
 }
 
 async function main() {
-  const network = process.argv[2] || 'mainnet';
-  const messageId = BigInt(process.argv[3] || '0');
-  
+  const network = process.argv[2] || "mainnet";
+  const messageId = BigInt(process.argv[3] || "0");
+
   if (process.argv.length <= 3) {
-    console.error('Please provide a message ID');
+    console.error("Please provide a message ID");
     process.exit(1);
   }
-  
-  if (network !== 'mainnet' && network !== 'testnet') {
-    console.error('Invalid network parameter');
+
+  if (network !== "mainnet" && network !== "testnet") {
+    console.error("Invalid network parameter");
     process.exit(1);
   }
 
   try {
     // Get the specific message
-    const message = await getMessage(messageId, network as 'mainnet' | 'testnet');
+    const message = await getMessage(
+      messageId,
+      network as "mainnet" | "testnet",
+    );
     console.log(`Message #${messageId}:`);
     console.log(`Content: ${message.content.trim()}`);
     console.log(`Author: ${message.author}`);
-    console.log(`Timestamp: ${new Date(Number(message.createdAt)).toLocaleString()}`);
+    console.log(
+      `Timestamp: ${new Date(Number(message.createdAt)).toLocaleString()}`,
+    );
   } catch (error) {
-    console.error('Execution failed:', error);
+    console.error("Execution failed:", error);
   }
 }
 
