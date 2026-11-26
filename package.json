@@ -6,6 +6,7 @@
   "scripts": {
     "start": "pnpm --filter sui-toolkit-client start",
     "build": "pnpm --filter sui-toolkit-client build",
+    "test": "pnpm --filter sui-toolkit-client test",
     "lint": "pnpm --filter sui-toolkit-client lint",
     "lint:fix": "pnpm --filter sui-toolkit-client lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",

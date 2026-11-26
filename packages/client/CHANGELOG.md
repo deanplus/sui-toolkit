@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed - 2026-11-26
+
+- Tooling & Build Migration:
+  - Migrated `packages/client` from Create React App (`react-scripts`) to Vite 6 and Vitest 3 while preserving the `build/` output directory for Cloudflare and Walrus deployment scripts.
+  - Upgraded TypeScript to 5.8 and replaced `eslint-config-react-app` with standalone TypeScript/React ESLint rules.
+  - Added baseline unit tests for CoinManager and explorer utilities and added a GitHub Actions CI workflow (`lint`, `format:check`, `test`, `build`).
+
 ### Removed - 2026-11-26
 
 - Faucet:
