@@ -22,7 +22,6 @@ const CoinObjectsTable: React.FC<CoinObjectsTableProps> = ({
   onToggleCoinSelection,
   onBurnSingle,
   price,
-  decimals,
   isLoading = false,
   symbol,
   iconUrl,

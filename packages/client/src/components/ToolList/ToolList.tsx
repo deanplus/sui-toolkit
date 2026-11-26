@@ -1,5 +1,6 @@
 import React from "react";
 import { Container, SimpleGrid, Heading } from "@chakra-ui/react";
+import { IconType } from "react-icons";
 import { FiSend, FiKey, FiCodesandbox } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import ToolCard from "../ToolCard/ToolCard";
@@ -9,7 +10,7 @@ type Tool = {
   id: string;
   titleKey: string;
   descriptionKey: string;
-  icon: any;
+  icon: IconType;
   href: string;
 };
 

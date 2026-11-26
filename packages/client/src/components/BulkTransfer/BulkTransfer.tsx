@@ -47,12 +47,15 @@ const BulkTransfer: React.FC = () => {
   const fetchAccountBalance = React.useCallback(async () => {
     if (currentAccount) {
       try {
-        const balanceResponse = await suiClient.getBalance({
+        const balanceResponse = (await suiClient.getBalance({
           owner: currentAccount.address,
-        });
+        })) as {
+          balance?: { balance?: string };
+          totalBalance?: string;
+        };
         const total =
-          (balanceResponse as any).balance?.balance ??
-          (balanceResponse as any).totalBalance ??
+          balanceResponse.balance?.balance ??
+          balanceResponse.totalBalance ??
           "0";
         setAccountBalance(BigInt(total));
       } catch (error) {
@@ -149,10 +152,10 @@ const BulkTransfer: React.FC = () => {
       }
 
       // Execute transaction
-      const result = await dAppKit.signAndExecuteTransaction({
+      const result = (await dAppKit.signAndExecuteTransaction({
         transaction: tx,
-      });
-      const digest = (result as any).digest;
+      })) as { digest?: string };
+      const digest = result.digest ?? "";
       setLastTxDigest(digest);
       toast.success(
         t("bulkTransfer.success.description", {

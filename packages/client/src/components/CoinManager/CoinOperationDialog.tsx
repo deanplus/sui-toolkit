@@ -15,6 +15,13 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { CoinObject } from "./types";
 import { formatBalance, formatCoinId } from "./utils";
+import {
+  capMergeCoinIds,
+  getMergeableCoinIds,
+  getReservedGasSuiCoinId,
+  getZeroBalanceCoinIds,
+  isZeroBalance,
+} from "./rules";
 import { MAX_MERGE_COIN_OBJECTS } from "../../utils/constants";
 
 interface CoinOperationDialogProps {
@@ -73,14 +80,16 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
 
   const limitMergeSelection = useCallback(
     (coinIds: string[], showNotice = false) => {
-      if (
-        operationType !== "merge" ||
-        coinIds.length <= MAX_MERGE_COIN_OBJECTS
-      ) {
+      if (operationType !== "merge") {
         return coinIds;
       }
 
-      if (showNotice) {
+      const { coinIds: cappedIds, wasCapped } = capMergeCoinIds(
+        coinIds,
+        MAX_MERGE_COIN_OBJECTS,
+      );
+
+      if (wasCapped && showNotice) {
         toast(
           t("coinManager.mergeSelectionLimitNotice", {
             limit: MAX_MERGE_COIN_OBJECTS,
@@ -88,7 +97,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
         );
       }
 
-      return coinIds.slice(0, MAX_MERGE_COIN_OBJECTS);
+      return cappedIds;
     },
     [operationType, t],
   );
@@ -97,32 +106,9 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
   const calculateTotalCoins = useCallback(
     (coins: CoinObject[], type: string): string[] => {
       if (operationType === "merge") {
-        // For merge operation, handle SUI coins specially
-        if (type === "0x2::sui::SUI") {
-          // For SUI, we need at least 3 coins to merge - including zero balance coins
-          if (coins.length >= 3) {
-            // Only return other coins, excluding the highest balance one (which will be used for gas)
-            // Sort coins by balance (descending) to identify the highest balance coin
-            const sortedCoins = [...coins].sort((a, b) =>
-              Number(BigInt(b.balance) - BigInt(a.balance)),
-            );
-
-            // Return all coins except the highest balance one
-            return sortedCoins.slice(1).map((c) => c.id);
-          } else {
-            return [];
-          }
-        }
-        // For other coins, need at least 2 coins to merge
-        if (coins.length >= 2) {
-          return coins.map((c) => c.id);
-        } else {
-          return [];
-        }
+        return getMergeableCoinIds(coins, type);
       } else if (operationType === "clean") {
-        // For clean operation, only select zero balance coins
-        const zeroCoins = coins.filter((c) => Number(c.balance) === 0);
-        return zeroCoins.map((c) => c.id);
+        return getZeroBalanceCoinIds(coins);
       }
       return [];
     },
@@ -132,13 +118,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
   // Find the highest balance SUI coin ID (to be used as gas and disabled from selection)
   const getHighestBalanceSuiCoinId = useCallback(
     (coins: CoinObject[], type: string): string | null => {
-      if (type === "0x2::sui::SUI" && coins.length > 0) {
-        const sortedCoins = [...coins].sort((a, b) =>
-          Number(BigInt(b.balance) - BigInt(a.balance)),
-        );
-        return sortedCoins[0].id;
-      }
-      return null;
+      return getReservedGasSuiCoinId(coins, type);
     },
     [],
   );
@@ -251,63 +231,18 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
   useEffect(() => {
     if (isOpen && coins.length > 0) {
       if (operationType === "clean") {
-        // 清理操作：选择所有零余额币
-        const zeroBalanceCoins = coins.filter(
-          (coin) => parseInt(coin.balance, 10) === 0,
-        );
-        setSelectedCoinIds(zeroBalanceCoins.map((coin) => coin.id));
+        setSelectedCoinIds(getZeroBalanceCoinIds(coins));
       } else if (operationType === "merge") {
         if (isBatchMode) {
-          // 批量合并模式
           const allIds: string[] = [];
-
           Object.entries(coinsByType).forEach(([type, data]) => {
-            if (type === "0x2::sui::SUI") {
-              // 对于 SUI 类型，排除余额最高的对象
-              if (data.coins.length >= 3) {
-                // 按余额排序
-                const sortedCoins = [...data.coins].sort((a, b) =>
-                  Number(BigInt(b.balance) - BigInt(a.balance)),
-                );
-
-                // 排除最高余额的 SUI，选择其余所有 SUI
-                const selectableSuiIds = sortedCoins.slice(1).map((c) => c.id);
-                selectableSuiIds.forEach((id) => allIds.push(id));
-              }
-            } else {
-              // 对于非 SUI 类型，选择所有币
-              if (data.coins.length >= 2) {
-                data.coins.forEach((coin: CoinObject) => allIds.push(coin.id));
-              }
-            }
+            allIds.push(...getMergeableCoinIds(data.coins, type));
           });
-
-          console.log(`Auto-selected ${allIds.length} coins for batch merge`);
           setSelectedCoinIds(limitMergeSelection(allIds));
         } else {
-          // 单类型合并模式
-          if (coinType === "0x2::sui::SUI") {
-            // 对于 SUI 类型，排除余额最高的对象
-            if (coins.length >= 3) {
-              // 按余额排序
-              const sortedCoins = [...coins].sort((a, b) =>
-                Number(BigInt(b.balance) - BigInt(a.balance)),
-              );
-
-              // 排除最高余额的 SUI，选择其余所有 SUI
-              const selectableSuiIds = sortedCoins.slice(1).map((c) => c.id);
-              setSelectedCoinIds(limitMergeSelection(selectableSuiIds));
-            } else {
-              setSelectedCoinIds([]);
-            }
-          } else {
-            // 对于非 SUI 类型，选择所有币
-            if (coins.length >= 2) {
-              setSelectedCoinIds(limitMergeSelection(coins.map((c) => c.id)));
-            } else {
-              setSelectedCoinIds([]);
-            }
-          }
+          setSelectedCoinIds(
+            limitMergeSelection(getMergeableCoinIds(coins, coinType)),
+          );
         }
       }
     } else {
@@ -769,14 +704,11 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
 
                       <VStack align="stretch" divideY="1px">
                         {(operationType === "clean"
-                          ? coins.filter(
-                              (coin) => parseInt(coin.balance, 10) === 0,
-                            )
+                          ? coins.filter((coin) => isZeroBalance(coin.balance))
                           : coins
-                        ).map((coin, index) => {
+                        ).map((coin) => {
                           const isSelected = selectedCoinIds.includes(coin.id);
-                          const isZeroBalance =
-                            parseInt(coin.balance, 10) === 0;
+                          const isZero = isZeroBalance(coin.balance);
                           // Check if this is the highest balance SUI coin (which should be disabled)
                           const isHighestBalanceSui =
                             coinType === "0x2::sui::SUI" &&
@@ -837,7 +769,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
 
                               <Text textAlign="right" flex="0 0 100px">
                                 {formatBalance(coin.balance, decimals)}
-                                {isZeroBalance && (
+                                {isZero && (
                                   <Badge ml={2} colorPalette="red" size="sm">
                                     {t("coinManager.zero")}
                                   </Badge>

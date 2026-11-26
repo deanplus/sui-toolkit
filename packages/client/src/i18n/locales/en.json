@@ -106,6 +106,7 @@
       "noCoinsSelected": "No coins selected",
       "notEnoughCoins": "Not enough coins",
       "cannotMergeTwoSuiCoins": "Cannot merge only two SUI coins (one needed for gas)",
+      "cannotBurnLastSui": "At least one SUI object must be kept for gas (you need at least 2 SUI objects to burn SUI)",
       "noZeroCoins": "No zero balance coins",
       "noMergeableCoins": "No mergeable coins",
       "noLowValueCoins": "No low value coins",

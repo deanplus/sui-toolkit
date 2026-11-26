@@ -8,6 +8,10 @@
   - Migrated `packages/client` from Create React App (`react-scripts`) to Vite 6 and Vitest 3 while preserving the `build/` output directory for Cloudflare and Walrus deployment scripts.
   - Upgraded TypeScript to 5.8 and replaced `eslint-config-react-app` with standalone TypeScript/React ESLint rules.
   - Added baseline unit tests for CoinManager and explorer utilities and added a GitHub Actions CI workflow (`lint`, `format:check`, `test`, `build`).
+- Coin Manager & Code Quality:
+  - Extracted CoinManager merge, zero-balance cleanup, SUI gas reservation, and burn selection rules into pure testable utilities (`rules.ts`) with Vitest unit tests.
+  - Fixed SUI burn protection so at least one SUI object (the highest-balance gas coin) is always preserved and burning SUI requires at least 2 SUI objects.
+  - Removed production `console.log` statements and eliminated remaining `any` types and ESLint warnings across `packages/client/src`.
 
 ### Removed - 2026-11-26
 

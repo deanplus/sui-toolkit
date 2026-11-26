@@ -106,6 +106,7 @@
       "noCoinsSelected": "没有选择代币",
       "notEnoughCoins": "没有足够的代币",
       "cannotMergeTwoSuiCoins": "不能合并仅有的两个SUI代币（一个用于支付交易费用）",
+      "cannotBurnLastSui": "销毁 SUI 时至少需要保留 1 个 SUI 对象用于支付燃料费（需至少拥有 2 个 SUI 对象）",
       "noZeroCoins": "没有零余额代币",
       "noMergeableCoins": "没有可合并的代币",
       "noLowValueCoins": "没有低价值代币",

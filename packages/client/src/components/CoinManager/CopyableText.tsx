@@ -34,11 +34,9 @@ const CopyableText: React.FC<CopyableTextProps> = ({
       // Try to use Chakra's clipboard method
       await clipboard.copy();
       await navigator.clipboard.writeText(text);
-      console.log("Copied using navigator.clipboard");
 
       // Set our own copied state
       setHasCopied(true);
-      console.log("Copy triggered", text);
     } catch (error) {
       console.error("Copy failed:", error);
     }

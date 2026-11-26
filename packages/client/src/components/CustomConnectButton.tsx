@@ -7,6 +7,17 @@ import {
 } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { Box, Flex } from "@chakra-ui/react";
+import { NetworkType } from "../dapp-kit";
+
+const SUPPORTED_NETWORKS: ReadonlyArray<NetworkType> = [
+  "mainnet",
+  "testnet",
+  "devnet",
+];
+
+const isSupportedNetwork = (network: string): network is NetworkType => {
+  return SUPPORTED_NETWORKS.includes(network as NetworkType);
+};
 
 // Custom hook to get the current wallet network
 export const useWalletNetwork = (autoSync = false) => {
@@ -30,19 +41,16 @@ export const useWalletNetwork = (autoSync = false) => {
           setWalletNetwork(network);
 
           // Sync dApp network with wallet network if autoSync is enabled
-          if (network !== appNetwork && autoSync) {
+          if (
+            network !== appNetwork &&
+            autoSync &&
+            isSupportedNetwork(network)
+          ) {
             try {
-              dAppKit.switchNetwork(network as any);
-              console.log(
-                `Auto-synced dApp network to wallet network: ${network}`,
-              );
+              dAppKit.switchNetwork(network);
             } catch (error) {
               console.error("Failed to switch network:", error);
             }
-          } else if (network !== appNetwork) {
-            console.log(
-              `Wallet is connected to ${network}, but dApp is on ${appNetwork}`,
-            );
           }
         }
       }
@@ -156,9 +164,6 @@ const CustomConnectButton = () => {
         position="relative"
         zIndex={10}
         display="inline-block"
-        onClick={() => {
-          console.log("Wallet button clicked");
-        }}
       >
         <ConnectButton />
       </Box>
