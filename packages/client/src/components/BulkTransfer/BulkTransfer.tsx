@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { getExplorerTxUrl } from "../../utils/explorer";
 import { useWalletNetwork } from "../CustomConnectButton";
+import { generateTransferCsvTemplate, parseTransferCsv } from "./csvUtils";
 
 interface TransferItem {
   address: string;
@@ -41,33 +42,71 @@ const BulkTransfer: React.FC = () => {
   const dAppKit = useDAppKit();
   const suiClient = useCurrentClient();
   const { t } = useTranslation();
-  const network = useWalletNetwork();
+  const network = useWalletNetwork(true);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Fetch account balance when currentAccount changes
+  // Fetch account balance when currentAccount or network changes
   const fetchAccountBalance = React.useCallback(async () => {
-    if (currentAccount) {
-      try {
-        const balanceResponse = (await suiClient.getBalance({
-          owner: currentAccount.address,
-        })) as {
-          balance?: { balance?: string };
-          totalBalance?: string;
-        };
-        const total =
-          balanceResponse.balance?.balance ??
-          balanceResponse.totalBalance ??
-          "0";
-        setAccountBalance(BigInt(total));
-      } catch (error) {
-        console.error("Failed to fetch balance:", error);
-        toast.error(t("bulkTransfer.error.balanceFetchFailed"));
-      }
+    if (!currentAccount) {
+      setAccountBalance(BigInt(0));
+      setLastTxDigest(null);
+      return;
+    }
+
+    try {
+      const balanceResponse = (await suiClient.getBalance({
+        owner: currentAccount.address,
+      })) as {
+        balance?: { balance?: string };
+        totalBalance?: string;
+      };
+      const total =
+        balanceResponse.balance?.balance ?? balanceResponse.totalBalance ?? "0";
+      setAccountBalance(BigInt(total));
+    } catch (error) {
+      console.error("Failed to fetch balance:", error);
+      toast.error(t("bulkTransfer.error.balanceFetchFailed"));
     }
   }, [currentAccount, suiClient, t]);
 
   useEffect(() => {
-    fetchAccountBalance();
-  }, [fetchAccountBalance]);
+    setLastTxDigest(null);
+    const timer = setTimeout(() => {
+      void fetchAccountBalance();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [fetchAccountBalance, network]);
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    try {
+      const content = await file.text();
+      const { items } = parseTransferCsv(content);
+      if (items.length === 0) {
+        toast.error(t("bulkTransfer.error.invalidCSV"));
+        return;
+      }
+      setTransferItems(items);
+    } catch (error) {
+      console.error("Failed to import CSV:", error);
+      toast.error(t("bulkTransfer.error.invalidCSV"));
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const blob = new Blob([generateTransferCsvTemplate()], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sui-bulk-transfer-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const addNewRow = () => {
     setTransferItems([
@@ -187,13 +226,36 @@ const BulkTransfer: React.FC = () => {
 
       <Stack display="flex" gap={8}>
         <Box p={5} borderWidth="1px" borderRadius="md" bg="white">
-          <HStack justifyContent="space-between" mb={4}>
+          <HStack justifyContent="space-between" mb={4} flexWrap="wrap" gap={2}>
             <Heading as="h2" size="md">
               {t("bulkTransfer.transferList")}
             </Heading>
-            <Button onClick={addNewRow} colorPalette="green" size="sm">
-              {t("bulkTransfer.addRow")}
-            </Button>
+            <HStack gap={2}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: "none" }}
+                onChange={handleImportCsv}
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                size="sm"
+              >
+                {t("bulkTransfer.importCSV")}
+              </Button>
+              <Button
+                onClick={handleDownloadTemplate}
+                variant="ghost"
+                size="sm"
+              >
+                {t("bulkTransfer.downloadTemplate")}
+              </Button>
+              <Button onClick={addNewRow} colorPalette="green" size="sm">
+                {t("bulkTransfer.addRow")}
+              </Button>
+            </HStack>
           </HStack>
 
           {currentAccount && (

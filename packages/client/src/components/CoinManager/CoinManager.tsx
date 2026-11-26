@@ -56,12 +56,15 @@ interface RawCoinObject {
   balance: string | bigint | number;
 }
 
+const PRICE_FETCH_CONCURRENCY = 5;
+
 const CoinManager: React.FC = () => {
   const { t } = useTranslation();
   const currentAccount = useCurrentAccount();
   const suiClient = useCurrentClient();
   const dAppKit = useDAppKit();
   const walletNetwork = useWalletNetwork(true);
+  const fetchRequestIdRef = React.useRef(0);
 
   const limitMergeCoinIds = useCallback(
     (coinIds: string[]) => {
@@ -179,64 +182,76 @@ const CoinManager: React.FC = () => {
     setSelectedCoins(new Set());
   };
 
-  // Fetch prices for all coins
-  const fetchCoinPrices = useCallback(async (summaries: CoinTypeSummary[]) => {
-    if (!summaries.length) return;
+  // Fetch prices for all coins with bounded concurrency
+  const fetchCoinPrices = useCallback(
+    async (summaries: CoinTypeSummary[], requestId: number) => {
+      if (!summaries.length) return;
 
-    try {
-      setLoadingState((prev) => ({ ...prev, fetchPrices: true }));
-      // Create a copy of summaries to update with price data
-      const updatedSummaries = [...summaries];
+      try {
+        setLoadingState((prev) => ({ ...prev, fetchPrices: true }));
+        const updatedSummaries = summaries.map((summary) => ({ ...summary }));
+        let nextIndex = 0;
 
-      // Fetch price for each coin type
-      for (let i = 0; i < updatedSummaries.length; i++) {
-        const summary = updatedSummaries[i];
+        const worker = async () => {
+          while (nextIndex < updatedSummaries.length) {
+            const currentIndex = nextIndex++;
+            const summary = updatedSummaries[currentIndex];
 
-        try {
-          // Skip fetching price for wUSDC itself
-          if (summary.type === USDC_COIN_TYPE) {
-            summary.price = "1.0";
-            summary.value =
-              Number(summary.totalBalance) / Math.pow(10, summary.decimals);
-            continue;
+            try {
+              if (summary.type === USDC_COIN_TYPE) {
+                summary.price = "1.0";
+                summary.value =
+                  Number(summary.totalBalance) / Math.pow(10, summary.decimals);
+                continue;
+              }
+
+              const price = await getPriceDirectAPI(
+                summary.type,
+                summary.decimals,
+                USDC_COIN_TYPE,
+                USDC_COIN_DECIMALS,
+              );
+
+              summary.price = price;
+              summary.value = price
+                ? calculateValue(summary.totalBalance, price, summary.decimals)
+                : null;
+            } catch (error) {
+              console.error(
+                `Error fetching price for ${summary.symbol}:`,
+                error,
+              );
+              summary.price = null;
+              summary.value = null;
+            }
           }
+        };
 
-          const price = await getPriceDirectAPI(
-            summary.type,
-            summary.decimals,
-            USDC_COIN_TYPE,
-            USDC_COIN_DECIMALS,
-          );
+        const workerCount = Math.min(
+          PRICE_FETCH_CONCURRENCY,
+          updatedSummaries.length,
+        );
+        await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
-          // Update the summary with price and calculated value
-          summary.price = price;
-          if (price) {
-            summary.value = calculateValue(
-              summary.totalBalance,
-              price,
-              summary.decimals,
-            );
-          } else {
-            summary.value = null;
-          }
-        } catch (error) {
-          console.error(`Error fetching price for ${summary.symbol}:`, error);
-          summary.price = null;
-          summary.value = null;
+        if (requestId === fetchRequestIdRef.current) {
+          setCoinTypeSummaries(updatedSummaries);
+        }
+      } catch (error) {
+        console.error("Error fetching coin prices:", error);
+      } finally {
+        if (requestId === fetchRequestIdRef.current) {
+          setLoadingState((prev) => ({ ...prev, fetchPrices: false }));
         }
       }
-
-      setCoinTypeSummaries(updatedSummaries);
-    } catch (error) {
-      console.error("Error fetching coin prices:", error);
-    } finally {
-      setLoadingState((prev) => ({ ...prev, fetchPrices: false }));
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Fetch all coins for the connected wallet
   const fetchAllCoins = useCallback(async () => {
     if (!currentAccount) return;
+
+    const requestId = ++fetchRequestIdRef.current;
 
     try {
       setLoadingState((prev) => ({ ...prev, fetchCoins: true }));
@@ -392,11 +407,18 @@ const CoinManager: React.FC = () => {
         return a.type.localeCompare(b.type);
       });
 
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
+
       setCoinTypeSummaries(summaries);
 
       // Fetch prices for all coin types
-      await fetchCoinPrices(summaries);
+      await fetchCoinPrices(summaries, requestId);
     } catch (error) {
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
       console.error("Error fetching coins:", error);
       toast.error(
         t("coinManager.error.title") +
@@ -404,7 +426,9 @@ const CoinManager: React.FC = () => {
           t("coinManager.error.unknownError"),
       );
     } finally {
-      setLoadingState((prev) => ({ ...prev, fetchCoins: false }));
+      if (requestId === fetchRequestIdRef.current) {
+        setLoadingState((prev) => ({ ...prev, fetchCoins: false }));
+      }
     }
   }, [currentAccount, suiClient, t, fetchCoinPrices]);
 
@@ -1221,15 +1245,27 @@ const CoinManager: React.FC = () => {
     });
   };
 
-  // Load coins when account changes or network changes
+  // Load coins automatically when account changes or network changes
   useEffect(() => {
-    // Clear current list first to prevent showing old network data
+    // Invalidate any in-flight requests from the previous network/account
+    fetchRequestIdRef.current += 1;
     setCoinTypeSummaries([]);
+    setSelectedCoinType(null);
+    setSelectedCoins(new Set());
+    setLoadingState((prev) => ({
+      ...prev,
+      networkSync: true,
+      fetchCoins: false,
+      fetchPrices: false,
+    }));
 
-    // Add a small delay to ensure the network is fully synchronized
+    // Wait briefly for wallet/dApp network sync before querying
     const timer = setTimeout(() => {
       setLoadingState((prev) => ({ ...prev, networkSync: false }));
-    }, 500); // 500ms delay to wait for network sync to complete
+      if (currentAccount) {
+        void fetchAllCoins();
+      }
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [currentAccount, walletNetwork, fetchAllCoins]);

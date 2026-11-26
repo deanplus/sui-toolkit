@@ -2,8 +2,16 @@
 
 ## [Unreleased]
 
+### Added - 2026-11-26
+
+- Bulk Transfer:
+  - Added CSV import and CSV template download with unit-tested CSV parsing (`csvUtils.ts`).
+
 ### Changed - 2026-11-26
 
+- Coin Manager & Bulk Transfer:
+  - Automatically refresh coin lists and balances on wallet account or network changes with stale-request protection.
+  - Parallelized token price fetching with bounded concurrency (`5`) to significantly speed up CoinManager loading.
 - Tooling & Build Migration:
   - Migrated `packages/client` from Create React App (`react-scripts`) to Vite 6 and Vitest 3 while preserving the `build/` output directory for Cloudflare and Walrus deployment scripts.
   - Upgraded TypeScript to 5.8 and replaced `eslint-config-react-app` with standalone TypeScript/React ESLint rules.
