@@ -18,7 +18,6 @@
   "navigation": {
     "home": "Home",
     "bulkTransfer": "Bulk Transfer",
-    "faucet": "Faucet",
     "mcp": "MCP",
     "coinManager": "Coin Manager"
   },
@@ -35,10 +34,6 @@
     "coinManager": {
       "title": "Coin Manager",
       "description": "Merge same type coins, clean zero balance coins and burn low value coins"
-    },
-    "faucet": {
-      "title": "Testnet Faucet",
-      "description": "Get SUI tokens on testnets"
     },
     "mcp": {
       "title": "MCP",
@@ -182,37 +177,6 @@
     "success": {
       "title": "Transfer Successful",
       "description": "Transaction digest: {{digest}}"
-    }
-  },
-  "faucet": {
-    "title": "Testnet Faucet",
-    "description": "Get SUI tokens on testnets. Enter your address below to receive tokens.",
-    "network": "Network",
-    "addresses": "Addresses",
-    "addressPlaceholder": "Enter one or more addresses (separate multiple with commas or newlines)",
-    "getTokens": "Get Tokens",
-    "submitting": "Submitting...",
-    "requestSuccess": "Request Successful",
-    "requestFailed": "Request Failed",
-    "successAddresses": "Successful Addresses",
-    "failedAddresses": "Failed Addresses",
-    "viewInExplorer": "View {{address}}... in Explorer",
-    "networks": {
-      "devnet": "Devnet",
-      "testnet": "Testnet",
-      "unavailable": "unavailable"
-    },
-    "success": {
-      "title": "Success",
-      "description": "Tokens sent to {{count}} addresses",
-      "message": "Successfully sent tokens to {{count}} address(es)"
-    },
-    "error": {
-      "title": "Error",
-      "description": "Unknown error occurred",
-      "noValidAddresses": "Please enter at least one valid address",
-      "invalidAddressFormat": "Invalid address format: {{address}}",
-      "noSuccessfulFunding": "No addresses were successfully funded"
     }
   }
 }

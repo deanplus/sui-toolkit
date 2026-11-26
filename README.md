@@ -11,7 +11,6 @@ The Sui Toolkit frontend code has been deployed on the Walrus platform. Walrus a
 Currently, Sui Toolkit offers the following features:
 
 - [Batch Transfer](https://toolkit.wal.app/bulk-transfer): Conveniently transfer SUI tokens to multiple addresses simultaneously
-- [Faucet](https://toolkit.wal.app/faucet): Quickly obtain testnet SUI tokens for development and testing
 - [Coin Manager](https://toolkit.wal.app/coin-manager): Efficiently manage your SUI tokens with features like merging, cleaning zero-value coins, and burning unwanted tokens
 
 ## Future Plans

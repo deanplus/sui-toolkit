@@ -18,7 +18,6 @@
   "navigation": {
     "home": "首页",
     "bulkTransfer": "批量转账",
-    "faucet": "水龙头",
     "mcp": "MCP",
     "coinManager": "币管理"
   },
@@ -35,10 +34,6 @@
     "coinManager": {
       "title": "币管理",
       "description": "合并相同类型代币、清理零余额和销毁低价值代币"
-    },
-    "faucet": {
-      "title": "测试网水龙头",
-      "description": "获取测试网 SUI 代币"
     },
     "mcp": {
       "title": "MCP",
@@ -182,37 +177,6 @@
     "success": {
       "title": "转账成功",
       "description": "交易哈希: {{digest}}"
-    }
-  },
-  "faucet": {
-    "title": "测试网水龙头",
-    "description": "获取测试网 SUI 代币。在下方输入你的地址以接收代币。",
-    "network": "网络",
-    "addresses": "地址",
-    "addressPlaceholder": "输入一个或多个地址（用逗号或换行符分隔多个地址）",
-    "getTokens": "获取代币",
-    "submitting": "提交中...",
-    "requestSuccess": "请求成功",
-    "requestFailed": "请求失败",
-    "successAddresses": "成功的地址",
-    "failedAddresses": "失败的地址",
-    "viewInExplorer": "在浏览器中查看 {{address}}...",
-    "networks": {
-      "devnet": "devnet",
-      "testnet": "testnet",
-      "unavailable": "暂不可用"
-    },
-    "success": {
-      "title": "成功",
-      "description": "代币已发送到 {{count}} 个地址",
-      "message": "成功发送代币到 {{count}} 个地址"
-    },
-    "error": {
-      "title": "错误",
-      "description": "发生未知错误",
-      "noValidAddresses": "请至少输入一个有效地址",
-      "invalidAddressFormat": "无效的地址格式: {{address}}",
-      "noSuccessfulFunding": "没有成功获取代币的地址"
     }
   }
 }

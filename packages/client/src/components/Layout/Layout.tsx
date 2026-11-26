@@ -86,7 +86,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <NavLink to="/coin-manager">
                   {t("navigation.coinManager")}
                 </NavLink>
-                <NavLink to="/faucet">{t("navigation.faucet")}</NavLink>
                 <Link
                   href="https://github.com/deanplus/sui-mcp"
                   target="_blank"

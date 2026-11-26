@@ -11,7 +11,6 @@ Sui Toolkit 前端代码已经部署在 Walrus 平台上。Walrus 采用去中�
 目前，Sui Toolkit 提供以下功能：
 
 - [批量转账](https://toolkit.wal.app/bulk-transfer): 便捷地向多个地址同时转账 SUI 代币
-- [测试网水龙头](https://toolkit.wal.app/faucet): 快速获取测试网 SUI 代币用于开发和测试
 - [代币管理](https://toolkit.wal.app/coin-manager): 高效管理你的 SUI 代币，支持合并代币、清理零值代币和销毁不需要的代币
 
 ## 未来计划

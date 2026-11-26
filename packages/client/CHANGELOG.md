@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Removed - 2026-11-26
+
+- Faucet:
+  - Removed the Faucet page, navigation entry, tool card, and related i18n copy because official Sui public faucet endpoints no longer permit direct browser CORS requests.
+
 ## [0.4.0]
 
 ### Changed - 2026-09-02
