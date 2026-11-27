@@ -1,7 +1,7 @@
 import React from "react";
 import { Container, SimpleGrid, Heading } from "@chakra-ui/react";
 import { IconType } from "react-icons";
-import { FiSend, FiKey, FiCodesandbox } from "react-icons/fi";
+import { FiSend, FiKey, FiCodesandbox, FiInfo, FiHash } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import ToolCard from "../ToolCard/ToolCard";
 
@@ -29,6 +29,20 @@ const tools: Tool[] = [
     descriptionKey: "tools.coinManager.description",
     icon: FiCodesandbox,
     href: "/coin-manager",
+  },
+  {
+    id: "coin-info",
+    titleKey: "tools.coinInfo.title",
+    descriptionKey: "tools.coinInfo.description",
+    icon: FiInfo,
+    href: "/coin-info",
+  },
+  {
+    id: "vanity-address",
+    titleKey: "tools.vanityAddress.title",
+    descriptionKey: "tools.vanityAddress.description",
+    icon: FiHash,
+    href: "/vanity-address",
   },
   {
     id: "mcp",

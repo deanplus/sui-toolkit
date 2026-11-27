@@ -30,6 +30,10 @@ import {
 import { useWalletNetwork } from "../CustomConnectButton";
 import { getPriceDirectAPI, calculateValue } from "../../utils/priceUtils";
 import {
+  GasEstimateResult,
+  simulateTransactionGas,
+} from "../../utils/gasEstimate";
+import {
   MAX_MERGE_COIN_OBJECTS,
   USDC_COIN_TYPE,
   SUI_TYPE_ARG,
@@ -65,6 +69,7 @@ const CoinManager: React.FC = () => {
   const dAppKit = useDAppKit();
   const walletNetwork = useWalletNetwork(true);
   const fetchRequestIdRef = React.useRef(0);
+  const burnEstimateRequestIdRef = React.useRef(0);
 
   const limitMergeCoinIds = useCallback(
     (coinIds: string[]) => {
@@ -108,12 +113,22 @@ const CoinManager: React.FC = () => {
   >([]);
 
   // Confirmation dialog states
-  const [burnConfirmation, setBurnConfirmation] = useState({
+  const [burnConfirmation, setBurnConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: "single" | "batch";
+    gasEstimate: GasEstimateResult | null;
+    isEstimatingGas: boolean;
+  }>({
     isOpen: false,
     title: "",
     message: "",
     onConfirm: () => {},
-    type: "single" as "single" | "batch",
+    type: "single",
+    gasEstimate: null,
+    isEstimatingGas: false,
   });
 
   // New state for burn selection dialog
@@ -139,6 +154,9 @@ const CoinManager: React.FC = () => {
     coinType: string;
     symbol: string;
     onConfirm: (selectedCoinIds: string[]) => void;
+    onEstimateGas?: (
+      selectedCoinIds: string[],
+    ) => Promise<GasEstimateResult | null>;
     operationType: "merge" | "clean";
     decimals: number;
     iconUrl?: string | null;
@@ -147,6 +165,7 @@ const CoinManager: React.FC = () => {
     coinType: "",
     symbol: "",
     onConfirm: () => {},
+    onEstimateGas: undefined,
     operationType: "merge",
     decimals: 9,
     iconUrl: null,
@@ -442,6 +461,128 @@ const CoinManager: React.FC = () => {
     summary.objects.some((coin) => isZeroBalance(coin.balance)),
   );
 
+  // Build transaction helpers shared between gas estimation and execution
+  const buildBatchMergeTransaction = useCallback(
+    (selectedCoinIds: string[]): Transaction | null => {
+      const tx = new Transaction();
+      const coinsByType = new Map<string, string[]>();
+
+      limitMergeCoinIds(selectedCoinIds).forEach((coinId) => {
+        for (const summary of coinTypeSummaries) {
+          const coin = summary.objects.find((c) => c.id === coinId);
+          if (coin) {
+            if (!coinsByType.has(summary.type)) {
+              coinsByType.set(summary.type, []);
+            }
+            coinsByType.get(summary.type)?.push(coinId);
+            break;
+          }
+        }
+      });
+
+      let mergeOps = 0;
+      for (const [type, coinIds] of coinsByType.entries()) {
+        const summary = coinTypeSummaries.find((s) => s.type === type);
+        if (!summary) continue;
+
+        const mergePlan = resolveMergePlan(
+          summary.objects,
+          coinIds,
+          type,
+          MAX_MERGE_COIN_OBJECTS,
+        );
+        if (!mergePlan) continue;
+
+        tx.mergeCoins(mergePlan.primaryCoinId, mergePlan.otherCoinIds);
+        mergeOps++;
+      }
+
+      return mergeOps > 0 ? tx : null;
+    },
+    [coinTypeSummaries, limitMergeCoinIds],
+  );
+
+  const buildCleanZeroTransaction = useCallback(
+    (
+      selectedCoinIds: string[],
+      targetCoinType?: string,
+    ): Transaction | null => {
+      const tx = new Transaction();
+      let cleanOps = 0;
+
+      for (const coinId of selectedCoinIds) {
+        let resolvedType = "";
+        if (targetCoinType) {
+          const summary = coinTypeSummaries.find(
+            (s) => s.type === targetCoinType,
+          );
+          const coin = summary?.objects.find(
+            (c) => c.id === coinId && isZeroBalance(c.balance),
+          );
+          if (coin) {
+            resolvedType = targetCoinType;
+          }
+        } else {
+          for (const summary of coinTypeSummaries) {
+            const coin = summary.objects.find(
+              (c) => c.id === coinId && isZeroBalance(c.balance),
+            );
+            if (coin) {
+              resolvedType = summary.type;
+              break;
+            }
+          }
+        }
+
+        if (resolvedType) {
+          tx.moveCall({
+            target: "0x2::coin::destroy_zero",
+            arguments: [tx.object(coinId)],
+            typeArguments: [resolvedType],
+          });
+          cleanOps++;
+        }
+      }
+
+      return cleanOps > 0 ? tx : null;
+    },
+    [coinTypeSummaries],
+  );
+
+  const buildBurnTransaction = useCallback((coinIds: string[]): Transaction => {
+    const tx = new Transaction();
+    for (const coinId of coinIds) {
+      tx.transferObjects([tx.object(coinId)], tx.pure.address("0x0"));
+    }
+    return tx;
+  }, []);
+
+  const estimateBurnConfirmationGas = useCallback(
+    (coinIds: string[]) => {
+      if (!currentAccount || coinIds.length === 0) return;
+
+      const requestId = ++burnEstimateRequestIdRef.current;
+      setBurnConfirmation((prev) => ({
+        ...prev,
+        gasEstimate: null,
+        isEstimatingGas: true,
+      }));
+
+      const tx = buildBurnTransaction(coinIds);
+      void simulateTransactionGas(suiClient, tx, currentAccount.address).then(
+        (result) => {
+          if (requestId !== burnEstimateRequestIdRef.current) return;
+          setBurnConfirmation((prev) => ({
+            ...prev,
+            gasEstimate: result,
+            isEstimatingGas: false,
+          }));
+        },
+      );
+    },
+    [buildBurnTransaction, currentAccount, suiClient],
+  );
+
   // Generic transaction execution function to reduce code duplication
   const executeTransaction = async (
     tx: Transaction,
@@ -505,44 +646,25 @@ const CoinManager: React.FC = () => {
       symbol: t("coinManager.multipleCoins"),
       decimals: 9,
       operationType: "merge",
+      onEstimateGas: async (selectedCoinIds: string[]) => {
+        const tx = buildBatchMergeTransaction(selectedCoinIds);
+        if (!tx) return null;
+        return simulateTransactionGas(suiClient, tx, currentAccount.address);
+      },
       onConfirm: async (selectedCoinIds: string[]) => {
         setOperationDialog((prev) => ({ ...prev, isOpen: false }));
 
         try {
           setLoadingState((prev) => ({ ...prev, batchMerge: true }));
 
-          // Create a transaction
-          const tx = new Transaction();
-          const coinsByType = new Map<string, string[]>();
-
-          // Group selected coins by type
-          limitMergeCoinIds(selectedCoinIds).forEach((coinId) => {
-            for (const summary of coinTypeSummaries) {
-              const coin = summary.objects.find((c) => c.id === coinId);
-              if (coin) {
-                if (!coinsByType.has(summary.type)) {
-                  coinsByType.set(summary.type, []);
-                }
-                coinsByType.get(summary.type)?.push(coinId);
-                break;
-              }
-            }
-          });
-
-          // Process each coin type
-          for (const [type, coinIds] of coinsByType.entries()) {
-            const summary = coinTypeSummaries.find((s) => s.type === type);
-            if (!summary) continue;
-
-            const mergePlan = resolveMergePlan(
-              summary.objects,
-              coinIds,
-              type,
-              MAX_MERGE_COIN_OBJECTS,
+          const tx = buildBatchMergeTransaction(selectedCoinIds);
+          if (!tx) {
+            toast.error(
+              t("coinManager.error.title") +
+                ": " +
+                t("coinManager.error.notEnoughCoins"),
             );
-            if (!mergePlan) continue;
-
-            tx.mergeCoins(mergePlan.primaryCoinId, mergePlan.otherCoinIds);
+            return;
           }
 
           // Execute transaction
@@ -601,34 +723,25 @@ const CoinManager: React.FC = () => {
       symbol: t("coinManager.multipleCoins"),
       decimals: 9,
       operationType: "clean",
+      onEstimateGas: async (selectedCoinIds: string[]) => {
+        const tx = buildCleanZeroTransaction(selectedCoinIds);
+        if (!tx) return null;
+        return simulateTransactionGas(suiClient, tx, currentAccount.address);
+      },
       onConfirm: async (selectedCoinIds: string[]) => {
         setOperationDialog((prev) => ({ ...prev, isOpen: false }));
 
         try {
           setLoadingState((prev) => ({ ...prev, batchCleanZero: true }));
 
-          // Create a single transaction for all zero-balance coins
-          const tx = new Transaction();
-
-          // Process selected coins
-          for (const coinId of selectedCoinIds) {
-            // Find the coin type
-            let coinType = "";
-            for (const summary of coinTypeSummaries) {
-              const coin = summary.objects.find((c) => c.id === coinId);
-              if (coin) {
-                coinType = summary.type;
-                break;
-              }
-            }
-
-            if (coinType) {
-              tx.moveCall({
-                target: "0x2::coin::destroy_zero",
-                arguments: [tx.object(coinId)],
-                typeArguments: [coinType],
-              });
-            }
+          const tx = buildCleanZeroTransaction(selectedCoinIds);
+          if (!tx) {
+            toast.error(
+              t("coinManager.error.title") +
+                ": " +
+                t("coinManager.error.noZeroCoins"),
+            );
+            return;
           }
 
           // Execute transaction
@@ -687,6 +800,18 @@ const CoinManager: React.FC = () => {
       decimals: summary.decimals,
       operationType: "merge",
       iconUrl: summary.iconUrl,
+      onEstimateGas: async (selectedCoinIds: string[]) => {
+        const mergePlan = resolveMergePlan(
+          summary.objects,
+          selectedCoinIds,
+          coinType,
+          MAX_MERGE_COIN_OBJECTS,
+        );
+        if (!mergePlan) return null;
+        const tx = new Transaction();
+        tx.mergeCoins(mergePlan.primaryCoinId, mergePlan.otherCoinIds);
+        return simulateTransactionGas(suiClient, tx, currentAccount.address);
+      },
       onConfirm: async (selectedCoinIds: string[]) => {
         setOperationDialog((prev) => ({ ...prev, isOpen: false }));
         try {
@@ -779,6 +904,11 @@ const CoinManager: React.FC = () => {
       decimals: summary.decimals,
       operationType: "clean",
       iconUrl: summary.iconUrl,
+      onEstimateGas: async (selectedCoinIds: string[]) => {
+        const tx = buildCleanZeroTransaction(selectedCoinIds, coinType);
+        if (!tx) return null;
+        return simulateTransactionGas(suiClient, tx, currentAccount.address);
+      },
       onConfirm: async (selectedCoinIds: string[]) => {
         setOperationDialog((prev) => ({ ...prev, isOpen: false }));
         try {
@@ -851,6 +981,8 @@ const CoinManager: React.FC = () => {
         count: selectedCoinsArray.length,
       }),
       type: "single",
+      gasEstimate: null,
+      isEstimatingGas: false,
       onConfirm: async () => {
         setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
@@ -889,6 +1021,7 @@ const CoinManager: React.FC = () => {
         }
       },
     });
+    estimateBurnConfirmationGas(selectedCoinsArray);
   };
 
   // Handle batch burning of coins (show all coins, default select low value coins)
@@ -1003,6 +1136,8 @@ const CoinManager: React.FC = () => {
       title: t("coinManager.confirmBatchBurn"),
       message: messageText,
       type: "batch",
+      gasEstimate: null,
+      isEstimatingGas: false,
       onConfirm: async () => {
         setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
@@ -1052,6 +1187,7 @@ const CoinManager: React.FC = () => {
         }
       },
     });
+    estimateBurnConfirmationGas(coinIds);
   };
 
   // Handle the burn dialog showing
@@ -1135,6 +1271,8 @@ const CoinManager: React.FC = () => {
         symbol: foundSummary.symbol || formatCoinType(foundCoinType),
       }),
       type: "single",
+      gasEstimate: null,
+      isEstimatingGas: false,
       onConfirm: async () => {
         setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
@@ -1170,6 +1308,7 @@ const CoinManager: React.FC = () => {
         }
       },
     });
+    estimateBurnConfirmationGas([coinId]);
   };
 
   // Handle burning multiple selected coins
@@ -1205,6 +1344,8 @@ const CoinManager: React.FC = () => {
       title: t("coinManager.confirmBurn"),
       message: t("coinManager.confirmBurnMessage", { count: coinIds.length }),
       type: "single",
+      gasEstimate: null,
+      isEstimatingGas: false,
       onConfirm: async () => {
         setBurnConfirmation((prev) => ({ ...prev, isOpen: false }));
 
@@ -1243,12 +1384,22 @@ const CoinManager: React.FC = () => {
         }
       },
     });
+    estimateBurnConfirmationGas(coinIds);
   };
 
   // Load coins automatically when account changes or network changes
   useEffect(() => {
-    // Invalidate any in-flight requests from the previous network/account
+    // Invalidate any in-flight requests and dialogs from the previous network/account
     fetchRequestIdRef.current += 1;
+    burnEstimateRequestIdRef.current += 1;
+    setBurnConfirmation((prev) => ({
+      ...prev,
+      isOpen: false,
+      gasEstimate: null,
+      isEstimatingGas: false,
+    }));
+    setBurnSelectionDialog((prev) => ({ ...prev, isOpen: false }));
+    setOperationDialog((prev) => ({ ...prev, isOpen: false }));
     setCoinTypeSummaries([]);
     setSelectedCoinType(null);
     setSelectedCoins(new Set());
@@ -1422,11 +1573,19 @@ const CoinManager: React.FC = () => {
       <BurnConfirmationDialog
         isOpen={burnConfirmation.isOpen}
         title={burnConfirmation.title}
-        onClose={() =>
-          setBurnConfirmation((prev) => ({ ...prev, isOpen: false }))
-        }
+        onClose={() => {
+          burnEstimateRequestIdRef.current += 1;
+          setBurnConfirmation((prev) => ({
+            ...prev,
+            isOpen: false,
+            gasEstimate: null,
+            isEstimatingGas: false,
+          }));
+        }}
         onConfirm={burnConfirmation.onConfirm}
         message={burnConfirmation.message}
+        gasEstimate={burnConfirmation.gasEstimate}
+        isEstimatingGas={burnConfirmation.isEstimatingGas}
         isLoading={
           burnConfirmation.type === "single"
             ? loadingState.singleOperation
@@ -1470,6 +1629,7 @@ const CoinManager: React.FC = () => {
           setOperationDialog((prev) => ({ ...prev, isOpen: false }))
         }
         onConfirm={operationDialog.onConfirm}
+        onEstimateGas={operationDialog.onEstimateGas}
         coins={
           operationDialog.coinType === "batch-operation"
             ? coinTypeSummaries.flatMap((summary) =>

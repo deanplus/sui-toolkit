@@ -21,7 +21,12 @@ import { isValidSuiAddress } from "@mysten/sui/utils";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { getExplorerTxUrl } from "../../utils/explorer";
+import {
+  GasEstimateResult,
+  simulateTransactionGas,
+} from "../../utils/gasEstimate";
 import { useWalletNetwork } from "../CustomConnectButton";
+import GasEstimatePanel from "../GasEstimatePanel";
 import { generateTransferCsvTemplate, parseTransferCsv } from "./csvUtils";
 
 interface TransferItem {
@@ -37,6 +42,10 @@ const BulkTransfer: React.FC = () => {
   const [accountBalance, setAccountBalance] = useState<bigint>(BigInt(0));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastTxDigest, setLastTxDigest] = useState<string | null>(null);
+  const [gasEstimate, setGasEstimate] = useState<GasEstimateResult | null>(
+    null,
+  );
+  const [isEstimatingGas, setIsEstimatingGas] = useState<boolean>(false);
 
   const currentAccount = useCurrentAccount();
   const dAppKit = useDAppKit();
@@ -44,6 +53,13 @@ const BulkTransfer: React.FC = () => {
   const { t } = useTranslation();
   const network = useWalletNetwork(true);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const estimateRequestIdRef = React.useRef(0);
+
+  const resetGasEstimate = React.useCallback(() => {
+    estimateRequestIdRef.current += 1;
+    setGasEstimate(null);
+    setIsEstimatingGas(false);
+  }, []);
 
   // Fetch account balance when currentAccount or network changes
   const fetchAccountBalance = React.useCallback(async () => {
@@ -71,11 +87,63 @@ const BulkTransfer: React.FC = () => {
 
   useEffect(() => {
     setLastTxDigest(null);
+    resetGasEstimate();
     const timer = setTimeout(() => {
       void fetchAccountBalance();
     }, 200);
     return () => clearTimeout(timer);
-  }, [fetchAccountBalance, network]);
+  }, [fetchAccountBalance, network, resetGasEstimate]);
+
+  const buildTransferTransaction = (validTransfers: TransferItem[]) => {
+    const tx = new Transaction();
+    for (const item of validTransfers) {
+      const amountInMist = Math.floor(Number(item.amount) * 10 ** 9);
+      const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(BigInt(amountInMist))]);
+      tx.transferObjects([coin], tx.pure.address(item.address));
+    }
+    return tx;
+  };
+
+  const getValidTransfers = () =>
+    transferItems.filter(
+      (item) =>
+        item.address &&
+        isValidSuiAddress(item.address) &&
+        item.amount &&
+        !isNaN(Number(item.amount)) &&
+        Number(item.amount) > 0,
+    );
+
+  const handleEstimateGas = async () => {
+    if (!currentAccount) {
+      toast.error(t("bulkTransfer.error.connectWallet"));
+      return;
+    }
+
+    const validTransfers = getValidTransfers();
+    if (validTransfers.length === 0) {
+      toast.error(t("bulkTransfer.error.noValidTransfers"));
+      return;
+    }
+
+    const requestId = ++estimateRequestIdRef.current;
+    setIsEstimatingGas(true);
+    try {
+      const tx = buildTransferTransaction(validTransfers);
+      const result = await simulateTransactionGas(
+        suiClient,
+        tx,
+        currentAccount.address,
+      );
+      if (requestId === estimateRequestIdRef.current) {
+        setGasEstimate(result);
+      }
+    } finally {
+      if (requestId === estimateRequestIdRef.current) {
+        setIsEstimatingGas(false);
+      }
+    }
+  };
 
   const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,6 +158,7 @@ const BulkTransfer: React.FC = () => {
         return;
       }
       setTransferItems(items);
+      resetGasEstimate();
     } catch (error) {
       console.error("Failed to import CSV:", error);
       toast.error(t("bulkTransfer.error.invalidCSV"));
@@ -134,6 +203,7 @@ const BulkTransfer: React.FC = () => {
 
     newItems[index][field] = value;
     setTransferItems(newItems);
+    resetGasEstimate();
   };
 
   const handleRemoveRow = (index: number) => {
@@ -141,6 +211,7 @@ const BulkTransfer: React.FC = () => {
       const newItems = [...transferItems];
       newItems.splice(index, 1);
       setTransferItems(newItems);
+      resetGasEstimate();
     }
   };
 
@@ -151,9 +222,7 @@ const BulkTransfer: React.FC = () => {
     }
 
     // Validate input
-    const validTransfers = transferItems.filter(
-      (item) => item.address && item.amount && !isNaN(Number(item.amount)),
-    );
+    const validTransfers = getValidTransfers();
 
     if (validTransfers.length === 0) {
       toast.error(t("bulkTransfer.error.noValidTransfers"));
@@ -174,21 +243,7 @@ const BulkTransfer: React.FC = () => {
     setIsLoading(true);
     setLastTxDigest(null);
     try {
-      const tx = new Transaction();
-
-      // Add all transfers to transaction
-      for (const item of validTransfers) {
-        // Convert amount to MIST (1 SUI = 10^9 MIST)
-        const amountInMist = Math.floor(Number(item.amount) * 10 ** 9);
-
-        // Split a portion from gas coin
-        const [coin] = tx.splitCoins(tx.gas, [
-          tx.pure.u64(BigInt(amountInMist)),
-        ]);
-
-        // Transfer to target address
-        tx.transferObjects([coin], tx.pure.address(item.address));
-      }
+      const tx = buildTransferTransaction(validTransfers);
 
       // Execute transaction
       const result = (await dAppKit.signAndExecuteTransaction({
@@ -196,6 +251,7 @@ const BulkTransfer: React.FC = () => {
       })) as { digest?: string };
       const digest = result.digest ?? "";
       setLastTxDigest(digest);
+      resetGasEstimate();
       toast.success(
         t("bulkTransfer.success.description", {
           digest,
@@ -339,16 +395,34 @@ const BulkTransfer: React.FC = () => {
               )}{" "}
               SUI
             </Text>
-            <Button
-              colorPalette="blue"
-              size="lg"
-              onClick={executeTransfer}
-              disabled={!currentAccount || isLoading}
-              width="full"
-              loading={isLoading}
-            >
-              {t("bulkTransfer.execute")}
-            </Button>
+
+            <GasEstimatePanel
+              estimate={gasEstimate}
+              isEstimating={isEstimatingGas}
+            />
+
+            <HStack width="full" gap={3}>
+              <Button
+                variant="outline"
+                colorPalette="blue"
+                size="lg"
+                onClick={handleEstimateGas}
+                disabled={!currentAccount || isLoading || isEstimatingGas}
+                loading={isEstimatingGas}
+              >
+                {t("gasEstimate.estimateButton")}
+              </Button>
+              <Button
+                colorPalette="blue"
+                size="lg"
+                onClick={executeTransfer}
+                disabled={!currentAccount || isLoading}
+                flex="1"
+                loading={isLoading}
+              >
+                {t("bulkTransfer.execute")}
+              </Button>
+            </HStack>
 
             {lastTxDigest && (
               <Box

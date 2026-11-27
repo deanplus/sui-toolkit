@@ -1,6 +1,8 @@
 import React from "react";
-import { Button, Dialog, Portal } from "@chakra-ui/react";
+import { Button, Dialog, Portal, VStack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { GasEstimateResult } from "../../utils/gasEstimate";
+import GasEstimatePanel from "../GasEstimatePanel";
 
 interface BurnConfirmationDialogProps {
   isOpen: boolean;
@@ -9,6 +11,8 @@ interface BurnConfirmationDialogProps {
   title: string;
   message: string;
   isLoading: boolean;
+  gasEstimate?: GasEstimateResult | null;
+  isEstimatingGas?: boolean;
 }
 
 const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
@@ -18,6 +22,8 @@ const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
   title,
   message,
   isLoading,
+  gasEstimate = null,
+  isEstimatingGas = false,
 }) => {
   const { t } = useTranslation();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -37,7 +43,15 @@ const BurnConfirmationDialog: React.FC<BurnConfirmationDialogProps> = ({
               <Dialog.Title>{title}</Dialog.Title>
             </Dialog.Header>
 
-            <Dialog.Body>{message}</Dialog.Body>
+            <Dialog.Body>
+              <VStack align="stretch" gap={4}>
+                <Text>{message}</Text>
+                <GasEstimatePanel
+                  estimate={gasEstimate}
+                  isEstimating={isEstimatingGas}
+                />
+              </VStack>
+            </Dialog.Body>
 
             <Dialog.Footer>
               <Button ref={cancelRef} onClick={onClose} disabled={isLoading}>

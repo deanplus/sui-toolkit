@@ -17,6 +17,8 @@ import Layout from "./components/Layout/Layout";
 import BulkTransfer from "./components/BulkTransfer/BulkTransfer";
 import ToolList from "./components/ToolList/ToolList";
 import CoinManager from "./components/CoinManager/CoinManager";
+import CoinInfo from "./components/CoinInfo/CoinInfo";
+import VanityAddress from "./components/VanityAddress/VanityAddress";
 
 // Create React Query client
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ function App() {
                 <Route path="/" element={<ToolList />} />
                 <Route path="/bulk-transfer" element={<BulkTransfer />} />
                 <Route path="/coin-manager" element={<CoinManager />} />
+                <Route path="/coin-info" element={<CoinInfo />} />
+                <Route path="/vanity-address" element={<VanityAddress />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

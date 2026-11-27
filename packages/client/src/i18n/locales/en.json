@@ -6,6 +6,7 @@
     "confirm": "Confirm",
     "copy": "Copy",
     "copied": "Copied!",
+    "copyFailed": "Copy failed, please copy manually",
     "connect": "Connect Wallet",
     "disconnect": "Disconnect",
     "sign": "Sign",
@@ -19,7 +20,9 @@
     "home": "Home",
     "bulkTransfer": "Bulk Transfer",
     "mcp": "MCP",
-    "coinManager": "Coin Manager"
+    "coinManager": "Coin Manager",
+    "coinInfo": "Coin Info",
+    "vanityAddress": "Vanity Address"
   },
   "language": {
     "en": "English",
@@ -34,6 +37,14 @@
     "coinManager": {
       "title": "Coin Manager",
       "description": "Merge same type coins, clean zero balance coins and burn low value coins"
+    },
+    "coinInfo": {
+      "title": "Coin Info",
+      "description": "Inspect metadata, total supply, supply state, and regulated status for any Sui coin type"
+    },
+    "vanityAddress": {
+      "title": "Vanity Address Generator",
+      "description": "Generate custom prefix/suffix Sui addresses locally in your browser using Web Workers"
     },
     "mcp": {
       "title": "MCP",
@@ -178,6 +189,84 @@
     "success": {
       "title": "Transfer Successful",
       "description": "Transaction digest: {{digest}}"
+    }
+  },
+  "gasEstimate": {
+    "estimateButton": "Estimate Gas",
+    "estimating": "Simulating transaction and estimating gas...",
+    "estimatedGas": "Estimated Net Gas Fee",
+    "netRebateTitle": "Estimated Net SUI Rebate (Storage Rebate > Cost)",
+    "computation": "Computation",
+    "storage": "Storage",
+    "rebate": "Rebate",
+    "simulationFailed": "Simulation failed (transaction may revert)"
+  },
+  "coinInfo": {
+    "title": "Coin Info",
+    "description": "Inspect on-chain metadata, total supply, supply state, and regulated status for any Sui coin type.",
+    "inputLabel": "Coin Type",
+    "search": "Search",
+    "quickPresets": "Quick Presets",
+    "loading": "Querying on-chain coin info...",
+    "viewInExplorer": "View in Explorer",
+    "decimals": "Decimals",
+    "totalSupply": "Total Supply",
+    "rawSupply": "Raw Base Units",
+    "yourBalance": "Your Balance",
+    "connectWalletToView": "Connect wallet to view",
+    "unavailable": "Unavailable",
+    "coinType": "Coin Type",
+    "metadataId": "Metadata Object ID",
+    "treasuryCapId": "TreasuryCap Object ID",
+    "denyCapId": "DenyCap Object ID",
+    "supplyState": {
+      "fixed": "Fixed Supply",
+      "burnOnly": "Burn Only",
+      "mutable": "Mintable / Unknown"
+    },
+    "regulatedState": {
+      "regulated": "Regulated",
+      "unregulated": "Unregulated",
+      "unknown": "Unknown"
+    },
+    "error": {
+      "invalidCoinType": "Invalid coin type format. Expected 0x...::module::Struct",
+      "notFound": "No on-chain coin info found on the current network",
+      "fetchFailed": "Failed to fetch coin info"
+    }
+  },
+  "vanityAddress": {
+    "title": "Sui Vanity Address Generator",
+    "description": "Generate custom prefix or suffix Sui Ed25519 addresses locally in your browser using multi-threaded Web Workers.",
+    "securityTitle": "100% Local Offline Generation — Keys Never Leave Your Browser",
+    "securityDescription": "All keypairs are generated locally via Web Workers. Nothing is sent over the network or persisted to storage. For maximum security, disconnect from the internet while generating and back up your suiprivkey securely.",
+    "prefixLabel": "Address Prefix (after 0x)",
+    "suffixLabel": "Address Suffix",
+    "threadsLabel": "Worker Threads",
+    "hexHint": "Hex characters only (0-9, a-f)",
+    "caseInsensitiveHint": "Sui addresses are matched in lowercase",
+    "expectedAttempts": "Expected Average Attempts",
+    "highDifficultyWarning": "Long pattern — may take a while",
+    "start": "Start Generating",
+    "stop": "Stop",
+    "foundToast": "Matching vanity address found!",
+    "resultsTitle": "Generated Results",
+    "clearResults": "Clear Results",
+    "addressLabel": "Sui Address",
+    "privateKeyLabel": "Private Key (Bech32 suiprivkey)",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "stats": {
+      "attempts": "Attempts",
+      "speed": "Speed",
+      "elapsed": "Elapsed",
+      "estimatedRemaining": "Est. Remaining"
+    },
+    "error": {
+      "emptyPattern": "Please enter a prefix or suffix",
+      "invalidHex": "Only hexadecimal characters (0-9, a-f) are allowed",
+      "tooLong": "Combined prefix and suffix length cannot exceed {{max}} characters",
+      "workerFailed": "Background worker stopped unexpectedly. Please try again."
     }
   }
 }

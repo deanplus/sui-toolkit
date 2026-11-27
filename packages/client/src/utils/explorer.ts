@@ -102,3 +102,23 @@ export const getExplorerTxUrl = (
 ) => {
   return getSuivisionTxUrl(digest, network);
 };
+
+/**
+ * Generate a URL for viewing a coin type in Suivision explorer
+ */
+export const getExplorerCoinUrl = (
+  coinType: string,
+  network: string = "mainnet",
+) => {
+  return `https://${network}.suivision.xyz/coin/${encodeURIComponent(coinType)}`;
+};
+
+/**
+ * Generate a URL for viewing an object in Suivision explorer
+ */
+export const getExplorerObjectUrl = (
+  objectId: string,
+  network: string = "mainnet",
+) => {
+  return `https://${network}.suivision.xyz/object/${objectId}`;
+};

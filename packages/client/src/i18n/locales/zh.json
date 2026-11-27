@@ -6,6 +6,7 @@
     "confirm": "确认",
     "copy": "复制",
     "copied": "已复制!",
+    "copyFailed": "复制失败，请手动复制",
     "connect": "连接钱包",
     "disconnect": "断开连接",
     "sign": "签名",
@@ -19,7 +20,9 @@
     "home": "首页",
     "bulkTransfer": "批量转账",
     "mcp": "MCP",
-    "coinManager": "币管理"
+    "coinManager": "币管理",
+    "coinInfo": "代币信息",
+    "vanityAddress": "靓地址"
   },
   "language": {
     "en": "英文",
@@ -34,6 +37,14 @@
     "coinManager": {
       "title": "币管理",
       "description": "合并相同类型代币、清理零余额和销毁低价值代币"
+    },
+    "coinInfo": {
+      "title": "代币信息查询",
+      "description": "查询任意 Sui 代币的元数据、总供应量、供应状态与监管状态"
+    },
+    "vanityAddress": {
+      "title": "Sui 靓地址生成器",
+      "description": "纯本地离线多线程生成指定前后缀的 Sui 地址"
     },
     "mcp": {
       "title": "MCP",
@@ -178,6 +189,84 @@
     "success": {
       "title": "转账成功",
       "description": "交易哈希: {{digest}}"
+    }
+  },
+  "gasEstimate": {
+    "estimateButton": "预估费用",
+    "estimating": "正在模拟交易并估算 Gas 费用...",
+    "estimatedGas": "预计净 Gas 费用",
+    "netRebateTitle": "预计净返还 SUI（存储返还大于费用）",
+    "computation": "计算费",
+    "storage": "存储费",
+    "rebate": "存储返还",
+    "simulationFailed": "模拟执行失败（交易可能会失败）"
+  },
+  "coinInfo": {
+    "title": "代币信息查询",
+    "description": "输入任意 Sui 代币类型（CoinType），查询链上元数据、总供应量、供应状态及监管状态。",
+    "inputLabel": "代币类型 (CoinType)",
+    "search": "查询",
+    "quickPresets": "常用代币",
+    "loading": "正在查询链上代币信息...",
+    "viewInExplorer": "在浏览器中查看",
+    "decimals": "精度 (Decimals)",
+    "totalSupply": "总供应量",
+    "rawSupply": "原始最小单位",
+    "yourBalance": "当前钱包余额",
+    "connectWalletToView": "连接钱包后查看",
+    "unavailable": "暂不可用",
+    "coinType": "代币类型",
+    "metadataId": "Metadata 对象 ID",
+    "treasuryCapId": "TreasuryCap 对象 ID",
+    "denyCapId": "DenyCap 对象 ID",
+    "supplyState": {
+      "fixed": "固定供应",
+      "burnOnly": "仅可销毁",
+      "mutable": "可增发 / 未知"
+    },
+    "regulatedState": {
+      "regulated": "受监管代币",
+      "unregulated": "非受监管",
+      "unknown": "状态未知"
+    },
+    "error": {
+      "invalidCoinType": "CoinType 格式无效，应为 0x...::module::Struct",
+      "notFound": "未在当前网络找到该代币的链上信息",
+      "fetchFailed": "查询代币信息失败"
+    }
+  },
+  "vanityAddress": {
+    "title": "Sui 靓地址生成器",
+    "description": "使用浏览器 Web Worker 本地离线生成带有自定义前缀或后缀的 Sui Ed25519 地址。",
+    "securityTitle": "纯本地离线计算，私钥绝不离开你的浏览器",
+    "securityDescription": "所有密钥对均在你的浏览器本地通过 Web Worker 生成，不会发送至任何服务器，也不会写入本地缓存。建议断网后生成并妥善备份 suiprivkey 私钥。",
+    "prefixLabel": "地址前缀 (0x 后)",
+    "suffixLabel": "地址后缀",
+    "threadsLabel": "并发线程数",
+    "hexHint": "仅支持十六进制字符 (0-9, a-f)",
+    "caseInsensitiveHint": "Sui 地址统一按小写匹配",
+    "expectedAttempts": "平均预计尝试次数",
+    "highDifficultyWarning": "长度较长，耗时可能较久",
+    "start": "开始生成",
+    "stop": "停止",
+    "foundToast": "已找到匹配的靓地址！",
+    "resultsTitle": "生成结果",
+    "clearResults": "清空结果",
+    "addressLabel": "Sui 地址",
+    "privateKeyLabel": "私钥 (Bech32 suiprivkey)",
+    "reveal": "显示",
+    "hide": "隐藏",
+    "stats": {
+      "attempts": "已尝试次数",
+      "speed": "当前速度",
+      "elapsed": "已用时间",
+      "estimatedRemaining": "预计剩余"
+    },
+    "error": {
+      "emptyPattern": "请至少填写前缀或后缀",
+      "invalidHex": "只能包含十六进制字符 0-9 和 a-f",
+      "tooLong": "前缀与后缀总长度不能超过 {{max}} 位",
+      "workerFailed": "后台生成线程异常中止，请重试"
     }
   }
 }

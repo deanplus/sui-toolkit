@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added - 2026-11-27
+
+- Gas Estimation:
+  - Added transaction simulation gas estimation (`simulateTransactionGas` + `GasEstimatePanel`) to Bulk Transfer and Coin Manager (merge, clean zero-balance, and burn confirmation dialogs), displaying computation cost, storage cost, storage rebate, net SUI cost/rebate, and pre-execution failure alerts.
+- Coin Info:
+  - Added the `/coin-info` page to query any Sui `CoinType` on the active network via gRPC `stateService.getCoinInfo`, displaying metadata, decimals, total supply, supply state, regulated status, object IDs, explorer links, and connected wallet balance.
+- Vanity Address Generator:
+  - Added the `/vanity-address` page for local, offline multi-threaded Ed25519 Sui vanity address generation using Web Workers, with difficulty estimation, live stats, and masked `suiprivkey` export.
+
 ### Added - 2026-11-26
 
 - Bulk Transfer:

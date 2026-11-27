@@ -23,11 +23,16 @@ import {
   isZeroBalance,
 } from "./rules";
 import { MAX_MERGE_COIN_OBJECTS } from "../../utils/constants";
+import { GasEstimateResult } from "../../utils/gasEstimate";
+import GasEstimatePanel from "../GasEstimatePanel";
 
 interface CoinOperationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (selectedCoinIds: string[]) => void;
+  onEstimateGas?: (
+    selectedCoinIds: string[],
+  ) => Promise<GasEstimateResult | null>;
   coins: CoinObject[];
   coinType: string;
   symbol: string;
@@ -63,6 +68,7 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  onEstimateGas,
   coins,
   coinType,
   symbol,
@@ -74,6 +80,11 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
   const { t } = useTranslation();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const [selectedCoinIds, setSelectedCoinIds] = useState<string[]>([]);
+  const [gasEstimate, setGasEstimate] = useState<GasEstimateResult | null>(
+    null,
+  );
+  const [isEstimatingGas, setIsEstimatingGas] = useState(false);
+  const estimateRequestIdRef = React.useRef(0);
 
   // Check if it's batch mode (multiple coin types)
   const isBatchMode = coinType === "batch-operation";
@@ -258,18 +269,44 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
     limitMergeSelection,
   ]);
 
-  const handleConfirm = () => {
-    // For SUI merging, ensure we're not including the highest balance SUI in the selected list
-    if (operationType === "merge") {
-      // Filter out highest balance SUI coins for each SUI type in batch mode
-      const highestSuiCoinId = highestBalanceSuiIds["0x2::sui::SUI"];
-      const filteredSelectedCoinIds = selectedCoinIds.filter((id) => {
-        return id !== highestSuiCoinId;
-      });
+  // Invalidate in-flight gas estimate when dialog context or selection changes
+  useEffect(() => {
+    estimateRequestIdRef.current += 1;
+    setGasEstimate(null);
+    setIsEstimatingGas(false);
+  }, [isOpen, selectedCoinIds, coinType, operationType]);
 
-      onConfirm(limitMergeSelection(filteredSelectedCoinIds, true));
-    } else {
-      onConfirm(selectedCoinIds);
+  const getEffectiveSelectedIds = () => {
+    if (operationType === "merge") {
+      const highestSuiCoinId = highestBalanceSuiIds["0x2::sui::SUI"];
+      const filteredSelectedCoinIds = selectedCoinIds.filter(
+        (id) => id !== highestSuiCoinId,
+      );
+      return limitMergeSelection(filteredSelectedCoinIds, true);
+    }
+    return selectedCoinIds;
+  };
+
+  const handleConfirm = () => {
+    onConfirm(getEffectiveSelectedIds());
+  };
+
+  const handleEstimateGas = async () => {
+    if (!onEstimateGas) return;
+    const effectiveIds = getEffectiveSelectedIds();
+    if (effectiveIds.length === 0) return;
+
+    const requestId = ++estimateRequestIdRef.current;
+    setIsEstimatingGas(true);
+    try {
+      const result = await onEstimateGas(effectiveIds);
+      if (requestId === estimateRequestIdRef.current) {
+        setGasEstimate(result);
+      }
+    } finally {
+      if (requestId === estimateRequestIdRef.current) {
+        setIsEstimatingGas(false);
+      }
     }
   };
 
@@ -782,12 +819,37 @@ const CoinOperationDialog: React.FC<CoinOperationDialogProps> = ({
                     </Box>
                   )}
                 </Box>
+
+                {(isEstimatingGas || gasEstimate) && (
+                  <Box mt={4}>
+                    <GasEstimatePanel
+                      estimate={gasEstimate}
+                      isEstimating={isEstimatingGas}
+                    />
+                  </Box>
+                )}
               </Dialog.Body>
 
               <Dialog.Footer>
                 <Button ref={cancelRef} onClick={onClose} disabled={isLoading}>
                   {t("common.cancel")}
                 </Button>
+                {onEstimateGas && (
+                  <Button
+                    variant="outline"
+                    colorPalette="blue"
+                    onClick={handleEstimateGas}
+                    ml={3}
+                    loading={isEstimatingGas}
+                    disabled={
+                      selectedCoinIds.length === 0 ||
+                      isLoading ||
+                      isEstimatingGas
+                    }
+                  >
+                    {t("gasEstimate.estimateButton")}
+                  </Button>
+                )}
                 <Button
                   colorPalette={operationType === "merge" ? "blue" : "red"}
                   onClick={handleConfirm}
